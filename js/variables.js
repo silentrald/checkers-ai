@@ -1,0 +1,11 @@
+const highlights = [];
+const grid = new Grid();
+const aiPieces = [];
+const playerPieces = [];
+let turn = Math.round(Math.random());
+let processing = false;
+let capturing = false;
+let currentPiece = null;
+let capturePieces = [];
+let playerKings = 0;
+let aiKings = 0;
