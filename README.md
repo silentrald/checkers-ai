@@ -1,0 +1,1 @@
+# Checkers AI using minimax
