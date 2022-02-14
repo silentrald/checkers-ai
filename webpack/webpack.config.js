@@ -7,23 +7,18 @@ module.exports = {
     rules: [ {
       test: /\.ts$/,
       exclude: /node_modules/,
-      use: {
-        loader: 'ts-loader',
-      },
+      use: { loader: 'ts-loader', },
     } ],
   },
 
   devtool: false,
 
-  resolve: {
-    extensions: [ '.ts', '.js' ],
-  },
+  resolve: { extensions: [ '.ts', '.js' ], },
 
   devServer: {
     static: {
       directory: path.join(
-        path.dirname(__dirname),
-        'public'
+        path.dirname(__dirname)
       ),
     },
     port: 3000,
@@ -33,8 +28,7 @@ module.exports = {
   output: {
     filename: 'bundle.js',
     path: path.join(
-      path.dirname(__dirname),
-      'public'
+      path.dirname(__dirname)
     ),
   },
 
