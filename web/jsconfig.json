@@ -1,7 +1,0 @@
-{
-    "compilerOptions": {
-        "module": "esnext",
-        "target": "es6"
-    },
-    "exclude": ["jsconfig.json"]
-}
