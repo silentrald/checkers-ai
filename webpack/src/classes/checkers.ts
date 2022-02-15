@@ -307,40 +307,129 @@ class Checkers {
   }
 
   passToAi() {
-    if (this.gameOver()) {
+    this.setupTurn();
+    if (this.gameOver(false)) {
       this.draw();
       return;
     }
 
     console.log('Ai Turn');
-    this.setupTurn();
 
     this.ai.move();
 
-    this.playerTurn = !this.playerTurn;
+    this.playerTurn = true;
     this.passToPlayer();
   }
 
   passToPlayer() {
-    if (this.gameOver()) {
+    this.setupTurn();
+    if (this.gameOver(true)) {
       this.draw();
       return;
     }
 
     console.log('Player Turn');
-    this.setupTurn();
 
     this.draw();
   }
 
-  gameOver() {
+  hasMoves(playerTurn: boolean): boolean {
+    if (playerTurn) {
+      for (const piece of this.playerPieces) {
+        const { x, y, } = piece.position;
+        if (this.board.isTopLeftEmpty(x, y))
+          return true;
+        if (this.board.isTopRightEmpty(x, y))
+          return true;
+        if (piece.king) {
+          if (this.board.isBottomLeftEmpty(x, y))
+            return true;
+          if (this.board.isBottomRightEmpty(x, y))
+            return true;
+        }
+      }
+    } else {
+      for (const piece of this.aiPieces) {
+        const { x, y, } = piece.position;
+        if (this.board.isBottomLeftEmpty(x, y))
+          return true;
+        if (this.board.isBottomRightEmpty(x, y))
+          return true;
+        if (piece.king) {
+          if (this.board.isTopLeftEmpty(x, y))
+            return true;
+          if (this.board.isTopRightEmpty(x, y))
+            return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  hasCaptures(capturePieces: Piece[], playerTurn: boolean): boolean {
+    if (playerTurn) {
+      for (const piece of capturePieces) {
+        const { x, y, } = piece.position;
+        if (this.board.isTopLeftCapturable(x, y, false))
+          return true;
+        if (this.board.isTopRightCapturable(x, y, false))
+          return true;
+        if (piece.king) {
+          if (this.board.isBottomLeftCapturable(x, y, false))
+            return true;
+          if (this.board.isBottomRightCapturable(x, y, false))
+            return true;
+        }
+      }
+    } else {
+      for (const piece of capturePieces) {
+        const { x, y, } = piece.position;
+        if (this.board.isBottomLeftCapturable(x, y, true))
+          return true;
+        if (this.board.isBottomRightCapturable(x, y, true))
+          return true;
+        if (piece.king) {
+          if (this.board.isTopLeftCapturable(x, y, true))
+            return true;
+          if (this.board.isTopRightCapturable(x, y, true))
+            return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  hasAvailableMoves(playerTurn: boolean): boolean {
+    const capturing = this.capturePieces.length > 0;
+    if (capturing) {
+      if (this.hasCaptures(this.capturePieces, playerTurn))
+        return true;
+    } else {
+      if (this.hasMoves(playerTurn))
+        return true;
+    }
+
+    return false;
+  }
+
+  gameOver(playerTurn: boolean) {
     if (this.playerPieces.length === 0) {
       alert('You Lose');
       return true;
-    } else if (this.aiPieces.length === 0) {
+    }
+
+    if (this.aiPieces.length === 0) {
       alert('You Win');
       return true;
     }
+
+    if (!this.hasAvailableMoves(playerTurn)) {
+      alert('Draw');
+      return true;
+    }
+
     return false;
   }
 

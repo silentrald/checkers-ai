@@ -248,11 +248,13 @@ class AI {
     this._reverseMove(move);
   }
 
-  private _setLeafNode(parent: TreeNode) {
+  private _setLeafNode(parent: TreeNode, draw = false) {
     const state = this.board.getState();
     let heuristic = this.heuristicMemo[state];
     if (heuristic === undefined) {
-      heuristic = this.heuristic.getHeuristic();
+      heuristic = draw ?
+        -this.heuristic.winFactor : // Draw Hueristic
+        this.heuristic.getHeuristic();
       this.heuristicMemo[state] = heuristic;
     }
     parent.heuristic = heuristic;
@@ -261,7 +263,14 @@ class AI {
   private branchSearchTree(parent: TreeNode, depth: number, playerTurn: boolean) {
     // Check if you can branch out
     const capturePieces = this.checkers.getForceCaptures(playerTurn);
-    if (capturePieces.length > 0) {
+    const capturing = capturePieces.length > 0;
+
+    if (capturing) {
+      if (!this.checkers.hasCaptures(capturePieces, playerTurn)) {
+        this._setLeafNode(parent, true);
+        return;
+      }
+
       for (const piece of capturePieces) {
         const captureMoves = this.getAllPossibleCaptureMoves(piece, []);
         for (const moves of captureMoves) {
@@ -280,6 +289,11 @@ class AI {
       if (parent.children.length === 0)
         this._setLeafNode(parent);
 
+      return;
+    }
+
+    if (!this.checkers.hasMoves(playerTurn)) {
+      this._setLeafNode(parent, true);
       return;
     }
 

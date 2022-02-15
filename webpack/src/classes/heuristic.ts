@@ -12,6 +12,8 @@ class Heuristic {
   pieceFactor = 4;
   kingFactor = 40;
 
+  turn = true;
+
   /* eslint-disable */
   positionFactors = [
     [ 0, 4, 0, 4, 0, 4, 0, 4 ],

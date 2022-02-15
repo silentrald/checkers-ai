@@ -41923,11 +41923,13 @@ class AI {
         parent.children.push(child);
         this._reverseMove(move);
     }
-    _setLeafNode(parent) {
+    _setLeafNode(parent, draw = false) {
         const state = this.board.getState();
         let heuristic = this.heuristicMemo[state];
         if (heuristic === undefined) {
-            heuristic = this.heuristic.getHeuristic();
+            heuristic = draw ?
+                -this.heuristic.winFactor : // Draw Hueristic
+                this.heuristic.getHeuristic();
             this.heuristicMemo[state] = heuristic;
         }
         parent.heuristic = heuristic;
@@ -41935,7 +41937,12 @@ class AI {
     branchSearchTree(parent, depth, playerTurn) {
         // Check if you can branch out
         const capturePieces = this.checkers.getForceCaptures(playerTurn);
-        if (capturePieces.length > 0) {
+        const capturing = capturePieces.length > 0;
+        if (capturing) {
+            if (!this.checkers.hasCaptures(capturePieces, playerTurn)) {
+                this._setLeafNode(parent, true);
+                return;
+            }
             for (const piece of capturePieces) {
                 const captureMoves = this.getAllPossibleCaptureMoves(piece, []);
                 for (const moves of captureMoves) {
@@ -41950,6 +41957,10 @@ class AI {
             }
             if (parent.children.length === 0)
                 this._setLeafNode(parent);
+            return;
+        }
+        if (!this.checkers.hasMoves(playerTurn)) {
+            this._setLeafNode(parent, true);
             return;
         }
         if (depth < 1) {
@@ -42527,32 +42538,114 @@ class Checkers {
         // console.log('State', this.board.getState());
     }
     passToAi() {
-        if (this.gameOver()) {
+        this.setupTurn();
+        if (this.gameOver(false)) {
             this.draw();
             return;
         }
         console.log('Ai Turn');
-        this.setupTurn();
         this.ai.move();
-        this.playerTurn = !this.playerTurn;
+        this.playerTurn = true;
         this.passToPlayer();
     }
     passToPlayer() {
-        if (this.gameOver()) {
+        this.setupTurn();
+        if (this.gameOver(true)) {
             this.draw();
             return;
         }
         console.log('Player Turn');
-        this.setupTurn();
         this.draw();
     }
-    gameOver() {
+    hasMoves(playerTurn) {
+        if (playerTurn) {
+            for (const piece of this.playerPieces) {
+                const { x, y, } = piece.position;
+                if (this.board.isTopLeftEmpty(x, y))
+                    return true;
+                if (this.board.isTopRightEmpty(x, y))
+                    return true;
+                if (piece.king) {
+                    if (this.board.isBottomLeftEmpty(x, y))
+                        return true;
+                    if (this.board.isBottomRightEmpty(x, y))
+                        return true;
+                }
+            }
+        }
+        else {
+            for (const piece of this.aiPieces) {
+                const { x, y, } = piece.position;
+                if (this.board.isBottomLeftEmpty(x, y))
+                    return true;
+                if (this.board.isBottomRightEmpty(x, y))
+                    return true;
+                if (piece.king) {
+                    if (this.board.isTopLeftEmpty(x, y))
+                        return true;
+                    if (this.board.isTopRightEmpty(x, y))
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+    hasCaptures(capturePieces, playerTurn) {
+        if (playerTurn) {
+            for (const piece of capturePieces) {
+                const { x, y, } = piece.position;
+                if (this.board.isTopLeftCapturable(x, y, false))
+                    return true;
+                if (this.board.isTopRightCapturable(x, y, false))
+                    return true;
+                if (piece.king) {
+                    if (this.board.isBottomLeftCapturable(x, y, false))
+                        return true;
+                    if (this.board.isBottomRightCapturable(x, y, false))
+                        return true;
+                }
+            }
+        }
+        else {
+            for (const piece of capturePieces) {
+                const { x, y, } = piece.position;
+                if (this.board.isBottomLeftCapturable(x, y, true))
+                    return true;
+                if (this.board.isBottomRightCapturable(x, y, true))
+                    return true;
+                if (piece.king) {
+                    if (this.board.isTopLeftCapturable(x, y, true))
+                        return true;
+                    if (this.board.isTopRightCapturable(x, y, true))
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+    hasAvailableMoves(playerTurn) {
+        const capturing = this.capturePieces.length > 0;
+        if (capturing) {
+            if (this.hasCaptures(this.capturePieces, playerTurn))
+                return true;
+        }
+        else {
+            if (this.hasMoves(playerTurn))
+                return true;
+        }
+        return false;
+    }
+    gameOver(playerTurn) {
         if (this.playerPieces.length === 0) {
             alert('You Lose');
             return true;
         }
-        else if (this.aiPieces.length === 0) {
+        if (this.aiPieces.length === 0) {
             alert('You Win');
+            return true;
+        }
+        if (!this.hasAvailableMoves(playerTurn)) {
+            alert('Draw');
             return true;
         }
         return false;
@@ -42704,6 +42797,7 @@ class Heuristic {
         this.winFactor = 1000;
         this.pieceFactor = 4;
         this.kingFactor = 40;
+        this.turn = true;
         /* eslint-disable */
         this.positionFactors = [
             [0, 4, 0, 4, 0, 4, 0, 4],
