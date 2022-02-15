@@ -40694,6 +40694,19 @@ function isMobile(param) {
 
 /***/ }),
 
+/***/ "./src/main.css":
+/*!**********************!*\
+  !*** ./src/main.css ***!
+  \**********************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+// extracted by mini-css-extract-plugin
+
+
+/***/ }),
+
 /***/ "./node_modules/object-assign/index.js":
 /*!*********************************************!*\
   !*** ./node_modules/object-assign/index.js ***!
@@ -41729,6 +41742,7 @@ __webpack_require__.r(__webpack_exports__);
 class TreeNode {
     constructor() {
         this.children = [];
+        this.heuristic = 0;
     }
 }
 class AI {
@@ -41909,6 +41923,15 @@ class AI {
         parent.children.push(child);
         this._reverseMove(move);
     }
+    _setLeafNode(parent) {
+        const state = this.board.getState();
+        let heuristic = this.heuristicMemo[state];
+        if (heuristic === undefined) {
+            heuristic = this.heuristic.getHeuristic();
+            this.heuristicMemo[state] = heuristic;
+        }
+        parent.heuristic = heuristic;
+    }
     branchSearchTree(parent, depth, playerTurn) {
         // Check if you can branch out
         const capturePieces = this.checkers.getForceCaptures(playerTurn);
@@ -41925,10 +41948,14 @@ class AI {
                     this._branch(parent, move, depth, playerTurn);
                 }
             }
+            if (parent.children.length === 0)
+                this._setLeafNode(parent);
             return;
         }
-        if (depth < 1)
+        if (depth < 1) {
+            this._setLeafNode(parent);
             return;
+        }
         if (playerTurn) {
             for (const piece of this.checkers.playerPieces) {
                 const { x, y, } = piece.position;
@@ -42039,16 +42066,12 @@ class AI {
                 }
             }
         }
+        if (parent.children.length === 0)
+            this._setLeafNode(parent);
     }
     minimax(parent, alpha, beta, maxPlayer) {
         if (parent.children.length === 0) {
-            const state = this.board.getState();
-            let heuristic = this.heuristicMemo[state];
-            if (!heuristic) {
-                heuristic = this.heuristic.getHeuristic();
-                this.heuristicMemo[state] = heuristic;
-            }
-            return heuristic;
+            return parent.heuristic;
         }
         // AI
         let val = 0;
@@ -42098,11 +42121,12 @@ class AI {
             this.checkers.promoted = promoted;
             this._reverseMove(moves);
         }
-        // console.log(max, bestMove);
         this._move(bestMove);
         this.checkers.tempCaptured.splice(0);
         this.transpositionTable = {};
-        console.log(this.heuristic.getHeuristic());
+        // console.log(this.heuristicMemo);
+        // console.log('Best Move Eval', max);
+        // console.log('Current Eval', this.heuristic.getHeuristic());
     }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (AI);
@@ -42130,6 +42154,7 @@ class Board {
         this.state = {
             left: 0,
             right: 0,
+            kings: 0,
         };
         this.grid = [];
         // Init Grid
@@ -42144,7 +42169,7 @@ class Board {
         this.grid[x][y] = val;
         let cell = -1;
         if (val instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"]) {
-            cell = +val.player;
+            cell = +val.player + 1;
         }
         else if (val instanceof _highlight__WEBPACK_IMPORTED_MODULE_1__["default"]) {
             cell = 3;
@@ -42163,8 +42188,14 @@ class Board {
     getCell(x, y) {
         return this.grid[x][y];
     }
+    setKing(x, y, king) {
+        const offset = (y << 2) + (x >> 1);
+        this.state.kings = (this.state.kings & ~(0x1 << offset) | (+king << offset)) >>> 0;
+    }
     getState() {
-        return this.state.left.toString(16) + this.state.right.toString(16).padStart(8, '0');
+        return this.state.left.toString(16).padStart(8, '0') +
+            this.state.right.toString(16).padStart(8, '0') +
+            this.state.kings.toString(16).padStart(8, '0');
     }
     // Move Check
     isTopLeftEmpty(x, y) {
@@ -42273,7 +42304,7 @@ class Checkers {
         for (let i = 0; i < 12; i++) {
             const x = i % 4 << 1;
             const y = Math.floor(i / 4);
-            const pxAi = x + (y & 1 ^ 1);
+            const pxAi = x + (y + 1 & 1);
             const pyAi = y;
             piece = new _piece__WEBPACK_IMPORTED_MODULE_2__["default"](pxAi, pyAi, false);
             this.board.setCell(pxAi, pyAi, piece);
@@ -42286,6 +42317,9 @@ class Checkers {
         }
         // Redraw
         this.draw();
+        if (!this.playerTurn) {
+            this.passToAi();
+        }
     }
     // Highlights
     resetHighlights() {
@@ -42380,13 +42414,14 @@ class Checkers {
     promoteToKing(piece) {
         if (piece.king)
             return;
-        const { y, } = piece.position;
+        const { x, y, } = piece.position;
         if (!piece.king) {
             if (piece.player) {
                 if (y === 0) {
                     piece.king = true;
                     this.promoted = true;
                     this.playerKings++;
+                    this.board.setKing(x, y, true);
                 }
             }
             else {
@@ -42394,14 +42429,17 @@ class Checkers {
                     piece.king = true;
                     this.promoted = true;
                     this.aiKings++;
+                    this.board.setKing(x, y, true);
                 }
             }
         }
     }
     demoteKing(piece) {
+        const { x, y, } = piece.position;
         if (this.promoted && piece.king) {
             this.promoted = false;
             piece.king = false;
+            this.board.setKing(x, y, false);
             if (piece.player) {
                 this.playerKings--;
             }
@@ -42415,6 +42453,11 @@ class Checkers {
         // Update the grid
         this.board.setCell(x, y, piece);
         this.board.setCell(pos.x, pos.y, null);
+        // Move king value
+        if (piece.king) {
+            this.board.setKing(x, y, true);
+            this.board.setKing(pos.x, pos.y, false);
+        }
         // Update the piece
         piece.setPosition(x, y);
     }
@@ -42423,8 +42466,8 @@ class Checkers {
         this.promoteToKing(piece);
     }
     reverseMovePiece(piece, x, y) {
-        this._movePiece(piece, x, y);
         this.demoteKing(piece);
+        this._movePiece(piece, x, y);
     }
     capturePiece(piece, x, y) {
         const { position: pos, } = piece;
@@ -42440,17 +42483,20 @@ class Checkers {
             this.playerPieces.splice(this.playerPieces.indexOf(captured), 1);
             if (captured.king) {
                 this.playerKings--;
+                this.board.setKing(capX, capY, false);
             }
         }
         else {
             this.aiPieces.splice(this.aiPieces.indexOf(captured), 1);
             if (captured.king) {
                 this.aiKings--;
+                this.board.setKing(capX, capY, false);
             }
         }
         this.promoteToKing(piece);
     }
     reverseCapturePiece(piece, x, y) {
+        this.demoteKing(piece);
         // Move the piece
         this._movePiece(piece, x, y);
         // Get the captured piece and put it back
@@ -42462,38 +42508,42 @@ class Checkers {
             this.playerPieces.push(captured);
             if (captured.king) {
                 this.playerKings++;
+                this.board.setKing(capX, capY, true);
             }
         }
         else {
             this.aiPieces.push(captured);
             if (captured.king) {
                 this.aiKings++;
+                this.board.setKing(capX, capY, true);
             }
         }
-        this.demoteKing(piece);
     }
     // Turns
     setupTurn() {
         this.capturePieces.splice(0);
         this.capturePieces = this.getForceCaptures(this.playerTurn);
         this.promoted = false;
+        // console.log('State', this.board.getState());
     }
     passToAi() {
         if (this.gameOver()) {
+            this.draw();
             return;
         }
-        this.setupTurn();
         console.log('Ai Turn');
+        this.setupTurn();
         this.ai.move();
         this.playerTurn = !this.playerTurn;
         this.passToPlayer();
     }
     passToPlayer() {
         if (this.gameOver()) {
+            this.draw();
             return;
         }
-        this.setupTurn();
         console.log('Player Turn');
+        this.setupTurn();
         this.draw();
     }
     gameOver() {
@@ -42649,36 +42699,30 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _piece__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./piece */ "./src/classes/piece.ts");
 
 class Heuristic {
-    // TODO: Add more factors here
+    /* eslint-enable */
     constructor(checkers) {
         this.winFactor = 1000;
         this.pieceFactor = 4;
         this.kingFactor = 40;
-        this.edgeFactor = 2;
-        this.centerFactor = 2;
-        this.edges = [
-            [0, 1],
-            [0, 3],
-            [0, 5],
-            [0, 7],
-            [7, 0],
-            [7, 2],
-            [7, 4],
-            [7, 6] // Right Edge
-        ];
-        this.centers = [
-            [3, 4],
-            [4, 5],
-            [5, 4],
-            [6, 4]
+        /* eslint-disable */
+        this.positionFactors = [
+            [0, 4, 0, 4, 0, 4, 0, 4],
+            [4, 0, 3, 0, 3, 0, 3, 0],
+            [0, 3, 0, 2, 0, 2, 0, 4],
+            [4, 0, 2, 0, 1, 0, 3, 0],
+            [0, 3, 0, 1, 0, 2, 0, 4],
+            [4, 0, 2, 0, 2, 0, 3, 0],
+            [0, 3, 0, 3, 0, 3, 0, 4],
+            [4, 0, 4, 0, 4, 0, 4, 0]
         ];
         this.checkers = checkers;
         this.board = checkers.board;
+        this.playerPieces = checkers.playerPieces;
+        this.aiPieces = checkers.aiPieces;
     }
-    // TODO: Create a heuristic here
     getHeuristic() {
-        const playerCount = this.checkers.playerPieces.length;
-        const aiCount = this.checkers.aiPieces.length;
+        const playerCount = this.playerPieces.length;
+        const aiCount = this.aiPieces.length;
         if (playerCount < 1) {
             return this.winFactor;
         }
@@ -42687,20 +42731,35 @@ class Heuristic {
         }
         let score = 0;
         //** Value Factors */
-        // Piece Factor
+        // Piece Count
         score += (aiCount - playerCount) * this.pieceFactor;
-        // King Factor
+        // King Count
         score += (this.checkers.aiKings - this.checkers.playerKings) * this.kingFactor;
+        // TODO: Trapped kings
+        // TODO: Runaway piece -> a piece that can king without getting blocked
+        // for (const piece of this.playerPieces) {
+        //   if (piece.king) { // Check for trapped king
+        //     //
+        //   } else { // Check for runaway piece
+        //     //
+        //   }
+        // }
+        // for (const piece of this.aiPieces) {
+        //   if (piece.king) { // Check for trapped king
+        //     //
+        //   } else { // Check for runaway piece
+        //     //
+        //   }
+        // }
         //** Positional */
-        for (const [x, y] of this.edges) {
-            const cell = this.board.getCell(x, y);
-            if (cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"])
-                score += (cell.player ? -1 : 1) * this.edgeFactor;
-        }
-        for (const [x, y] of this.centers) {
-            const cell = this.board.getCell(x, y);
-            if (cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"])
-                score += (cell.player ? -1 : 1) * this.centerFactor;
+        let cell;
+        for (let y = 0; y < 8; y++) {
+            for (let x = y + 1 & 1; x < 8; x += 2) {
+                cell = this.board.getCell(x, y);
+                if (cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"]) {
+                    score += this.positionFactors[y][x] * (cell.player ? -1 : 1);
+                }
+            }
         }
         return score;
     }
@@ -42871,7 +42930,7 @@ const TILE_SIZE = 64;
 const HALF_TILE_SIZE = TILE_SIZE / 2;
 const PIECE_RADIUS = HALF_TILE_SIZE - 4;
 const OUTLINE_SIZE = 4;
-const MAX_DEPTH = 9;
+const MAX_DEPTH = 7;
 
 
 /***/ }),
@@ -44276,10 +44335,12 @@ var __webpack_exports__ = {};
   !*** ./src/index.ts ***!
   \**********************/
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _classes_checkers__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./classes/checkers */ "./src/classes/checkers.ts");
+/* harmony import */ var _main_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./main.css */ "./src/main.css");
+/* harmony import */ var _classes_checkers__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./classes/checkers */ "./src/classes/checkers.ts");
 var _a;
 
-const checkers = new _classes_checkers__WEBPACK_IMPORTED_MODULE_0__["default"]();
+
+const checkers = new _classes_checkers__WEBPACK_IMPORTED_MODULE_1__["default"]();
 (_a = document.getElementById('checkers')) === null || _a === void 0 ? void 0 : _a.appendChild(checkers.app.view);
 
 })();

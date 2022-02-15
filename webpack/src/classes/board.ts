@@ -7,6 +7,7 @@ class Board {
   private state = {
     left: 0,
     right: 0,
+    kings: 0,
   };
   private grid: GridState[][] = [];
 
@@ -25,7 +26,7 @@ class Board {
 
     let cell = -1;
     if (val instanceof Piece) {
-      cell = +val.player;
+      cell = +val.player + 1;
     } else if (val instanceof Highlight) {
       cell = 3;
     } else { // null
@@ -46,8 +47,15 @@ class Board {
     return this.grid[x][y];
   }
 
+  setKing(x: number, y: number, king: boolean) {
+    const offset = (y << 2) + (x >> 1);
+    this.state.kings = (this.state.kings & ~(0x1 << offset) | (+king << offset)) >>> 0;
+  }
+
   getState(): string {
-    return this.state.left.toString(16) + this.state.right.toString(16).padStart(8, '0');
+    return this.state.left.toString(16).padStart(8, '0') +
+      this.state.right.toString(16).padStart(8, '0') +
+      this.state.kings.toString(16).padStart(8, '0');
   }
 
   // Move Check

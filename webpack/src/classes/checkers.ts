@@ -45,12 +45,12 @@ class Checkers {
     this.graphics.on('mousedown', (ev) => this.input.mousedown(ev));
 
     // Setup Pieces
-    let piece;
+    let piece: Piece | undefined;
     for (let i = 0; i < 12; i++) {
       const x = i % 4 << 1;
       const y = Math.floor(i / 4);
 
-      const pxAi = x + (y & 1 ^ 1);
+      const pxAi = x + (y + 1 & 1);
       const pyAi = y;
       piece = new Piece(pxAi, pyAi, false);
       this.board.setCell(pxAi, pyAi, piece);
@@ -65,6 +65,10 @@ class Checkers {
 
     // Redraw
     this.draw();
+
+    if (!this.playerTurn) {
+      this.passToAi();
+    }
   }
 
   // Highlights
@@ -175,7 +179,7 @@ class Checkers {
   promoteToKing(piece: Piece) {
     if (piece.king) return;
 
-    const { y, } = piece.position;
+    const { x, y, } = piece.position;
 
     if (!piece.king) {
       if (piece.player) {
@@ -183,21 +187,25 @@ class Checkers {
           piece.king = true;
           this.promoted = true;
           this.playerKings++;
+          this.board.setKing(x, y, true);
         }
       } else {
         if (y === 7) {
           piece.king = true;
           this.promoted = true;
           this.aiKings++;
+          this.board.setKing(x, y, true);
         }
       }
     }
   }
 
   demoteKing(piece: Piece) {
+    const { x, y, } = piece.position;
     if (this.promoted && piece.king) {
       this.promoted = false;
       piece.king = false;
+      this.board.setKing(x, y, false);
       if (piece.player) {
         this.playerKings--;
       } else {
@@ -213,6 +221,12 @@ class Checkers {
     this.board.setCell(x, y, piece);
     this.board.setCell(pos.x, pos.y, null);
 
+    // Move king value
+    if (piece.king) {
+      this.board.setKing(x, y, true);
+      this.board.setKing(pos.x, pos.y, false);
+    }
+
     // Update the piece
     piece.setPosition(x, y);
   }
@@ -223,8 +237,8 @@ class Checkers {
   }
 
   reverseMovePiece(piece: Piece, x: number, y: number) {
-    this._movePiece(piece, x, y);
     this.demoteKing(piece);
+    this._movePiece(piece, x, y);
   }
 
   capturePiece(piece: Piece, x: number, y: number) {
@@ -244,17 +258,21 @@ class Checkers {
       this.playerPieces.splice(this.playerPieces.indexOf(captured), 1);
       if (captured.king) {
         this.playerKings--;
+        this.board.setKing(capX, capY, false);
       }
     } else {
       this.aiPieces.splice(this.aiPieces.indexOf(captured), 1);
       if (captured.king) {
         this.aiKings--;
+        this.board.setKing(capX, capY, false);
       }
     }
     this.promoteToKing(piece);
   }
 
   reverseCapturePiece(piece: Piece, x: number, y: number) {
+    this.demoteKing(piece);
+
     // Move the piece
     this._movePiece(piece, x, y);
 
@@ -268,15 +286,15 @@ class Checkers {
       this.playerPieces.push(captured);
       if (captured.king) {
         this.playerKings++;
+        this.board.setKing(capX, capY, true);
       }
     } else {
       this.aiPieces.push(captured);
       if (captured.king) {
         this.aiKings++;
+        this.board.setKing(capX, capY, true);
       }
     }
-
-    this.demoteKing(piece);
   }
 
   // Turns
@@ -284,15 +302,18 @@ class Checkers {
     this.capturePieces.splice(0);
     this.capturePieces = this.getForceCaptures(this.playerTurn);
     this.promoted = false;
+
+    // console.log('State', this.board.getState());
   }
 
   passToAi() {
     if (this.gameOver()) {
+      this.draw();
       return;
     }
 
-    this.setupTurn();
     console.log('Ai Turn');
+    this.setupTurn();
 
     this.ai.move();
 
@@ -302,11 +323,12 @@ class Checkers {
 
   passToPlayer() {
     if (this.gameOver()) {
+      this.draw();
       return;
     }
 
-    this.setupTurn();
     console.log('Player Turn');
+    this.setupTurn();
 
     this.draw();
   }

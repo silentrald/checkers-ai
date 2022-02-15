@@ -8,6 +8,7 @@ import { MAX_DEPTH } from '../config/values';
 
 class TreeNode {
   children: TreeNode[] = [];
+  heuristic = 0;
 }
 
 class AI {
@@ -27,7 +28,9 @@ class AI {
     piece: Piece, x: number, y: number,
     moves: Vector2d[], output: Vector2d[][]
   ) {
-    const pos = { ...piece.position, };
+    const pos = {
+      ...piece.position,
+    };
     this.checkers.capturePiece(piece, x, y);
     moves.push({
       x,
@@ -117,7 +120,9 @@ class AI {
           rootMoves.push({
             moves: m,
             piece,
-            starting: { ...piece.position, },
+            starting: {
+              ...piece.position,
+            },
             capturing: true,
           });
         }
@@ -133,7 +138,9 @@ class AI {
                 x: x - 1,
                 y: y - 1,
               } ],
-              starting: { ...piece.position, },
+              starting: {
+                ...piece.position,
+              },
               capturing: false,
             });
           }
@@ -144,7 +151,9 @@ class AI {
                 x: x + 1,
                 y: y - 1,
               } ],
-              starting: { ...piece.position, },
+              starting: {
+                ...piece.position,
+              },
               capturing: false,
             });
           }
@@ -157,7 +166,9 @@ class AI {
               x: x - 1,
               y: y + 1,
             } ],
-            starting: { ...piece.position, },
+            starting: {
+              ...piece.position,
+            },
             capturing: false,
           });
         }
@@ -168,7 +179,9 @@ class AI {
               y: y + 1,
             } ],
             piece,
-            starting: { ...piece.position, },
+            starting: {
+              ...piece.position,
+            },
             capturing: false,
           });
         }
@@ -235,6 +248,16 @@ class AI {
     this._reverseMove(move);
   }
 
+  private _setLeafNode(parent: TreeNode) {
+    const state = this.board.getState();
+    let heuristic = this.heuristicMemo[state];
+    if (heuristic === undefined) {
+      heuristic = this.heuristic.getHeuristic();
+      this.heuristicMemo[state] = heuristic;
+    }
+    parent.heuristic = heuristic;
+  }
+
   private branchSearchTree(parent: TreeNode, depth: number, playerTurn: boolean) {
     // Check if you can branch out
     const capturePieces = this.checkers.getForceCaptures(playerTurn);
@@ -245,16 +268,25 @@ class AI {
           const move = {
             piece,
             moves,
-            starting: { ...piece.position, },
+            starting: {
+              ...piece.position,
+            },
             capturing: true,
           };
           this._branch(parent, move, depth, playerTurn);
         }
       }
+
+      if (parent.children.length === 0)
+        this._setLeafNode(parent);
+
       return;
     }
 
-    if (depth < 1) return;
+    if (depth < 1) {
+      this._setLeafNode(parent);
+      return;
+    }
 
     if (playerTurn) {
       for (const piece of this.checkers.playerPieces) {
@@ -267,7 +299,9 @@ class AI {
                 x: x - 1,
                 y: y + 1,
               } ],
-              starting: { ...piece.position, },
+              starting: {
+                ...piece.position,
+              },
               capturing: false,
             };
             this._branch(parent, move, depth, playerTurn);
@@ -279,7 +313,9 @@ class AI {
                 x: x + 1,
                 y: y + 1,
               } ],
-              starting: { ...piece.position, },
+              starting: {
+                ...piece.position,
+              },
               capturing: false,
             };
             this._branch(parent, move, depth, playerTurn);
@@ -293,7 +329,9 @@ class AI {
               x: x - 1,
               y: y - 1,
             } ],
-            starting: { ...piece.position, },
+            starting: {
+              ...piece.position,
+            },
             capturing: false,
           };
           this._branch(parent, move, depth, playerTurn);
@@ -305,7 +343,9 @@ class AI {
               x: x + 1,
               y: y - 1,
             } ],
-            starting: { ...piece.position, },
+            starting: {
+              ...piece.position,
+            },
             capturing: false,
           };
           this._branch(parent, move, depth, playerTurn);
@@ -323,7 +363,9 @@ class AI {
                 x: x - 1,
                 y: y - 1,
               } ],
-              starting: { ...piece.position, },
+              starting: {
+                ...piece.position,
+              },
               capturing: false,
             };
             this._branch(parent, move, depth, playerTurn);
@@ -335,7 +377,9 @@ class AI {
                 x: x + 1,
                 y: y - 1,
               } ],
-              starting: { ...piece.position, },
+              starting: {
+                ...piece.position,
+              },
               capturing: false,
             };
             this._branch(parent, move, depth, playerTurn);
@@ -349,7 +393,9 @@ class AI {
               x: x - 1,
               y: y + 1,
             } ],
-            starting: { ...piece.position, },
+            starting: {
+              ...piece.position,
+            },
             capturing: false,
           };
           this._branch(parent, move, depth, playerTurn);
@@ -361,13 +407,18 @@ class AI {
               x: x + 1,
               y: y + 1,
             } ],
-            starting: { ...piece.position, },
+            starting: {
+              ...piece.position,
+            },
             capturing: false,
           };
           this._branch(parent, move, depth, playerTurn);
         }
       }
     }
+
+    if (parent.children.length === 0)
+      this._setLeafNode(parent);
   }
 
   private minimax(
@@ -376,13 +427,7 @@ class AI {
     maxPlayer: boolean
   ): number {
     if (parent.children.length === 0) {
-      const state = this.board.getState();
-      let heuristic = this.heuristicMemo[state];
-      if (!heuristic) {
-        heuristic = this.heuristic.getHeuristic();
-        this.heuristicMemo[state] = heuristic;
-      }
-      return heuristic;
+      return parent.heuristic;
     }
 
     // AI
@@ -437,11 +482,12 @@ class AI {
       this._reverseMove(moves);
     }
 
-    // console.log(max, bestMove);
     this._move(bestMove);
     this.checkers.tempCaptured.splice(0);
     this.transpositionTable = {};
-    console.log(this.heuristic.getHeuristic());
+    // console.log(this.heuristicMemo);
+    // console.log('Best Move Eval', max);
+    // console.log('Current Eval', this.heuristic.getHeuristic());
   }
 }
 

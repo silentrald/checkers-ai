@@ -5,40 +5,36 @@ import Piece from './piece';
 class Heuristic {
   checkers: Checkers;
   board: Board;
+  playerPieces: Piece[];
+  aiPieces: Piece[];
 
   winFactor = 1000;
   pieceFactor = 4;
   kingFactor = 40;
-  edgeFactor = 2;
-  centerFactor = 2;
 
-  edges = [
-    [ 0, 1 ],
-    [ 0, 3 ],
-    [ 0, 5 ],
-    [ 0, 7 ], // Left Edge
-    [ 7, 0 ],
-    [ 7, 2 ],
-    [ 7, 4 ],
-    [ 7, 6 ] // Right Edge
+  /* eslint-disable */
+  positionFactors = [
+    [ 0, 4, 0, 4, 0, 4, 0, 4 ],
+    [ 4, 0, 3, 0, 3, 0, 3, 0 ],
+    [ 0, 3, 0, 2, 0, 2, 0, 4 ],
+    [ 4, 0, 2, 0, 1, 0, 3, 0 ],
+    [ 0, 3, 0, 1, 0, 2, 0, 4 ],
+    [ 4, 0, 2, 0, 2, 0, 3, 0 ],
+    [ 0, 3, 0, 3, 0, 3, 0, 4 ],
+    [ 4, 0, 4, 0, 4, 0, 4, 0 ]
   ];
-  centers = [
-    [ 3, 4 ],
-    [ 4, 5 ],
-    [ 5, 4 ],
-    [ 6, 4 ]
-  ];
+  /* eslint-enable */
 
-  // TODO: Add more factors here
   constructor(checkers: Checkers) {
     this.checkers = checkers;
     this.board = checkers.board;
+    this.playerPieces = checkers.playerPieces;
+    this.aiPieces = checkers.aiPieces;
   }
 
-  // TODO: Create a heuristic here
   getHeuristic(): number {
-    const playerCount = this.checkers.playerPieces.length;
-    const aiCount = this.checkers.aiPieces.length;
+    const playerCount = this.playerPieces.length;
+    const aiCount = this.aiPieces.length;
     if (playerCount < 1) {
       return this.winFactor;
     }
@@ -48,21 +44,37 @@ class Heuristic {
 
     let score = 0;
     //** Value Factors */
-    // Piece Factor
+    // Piece Count
     score += (aiCount - playerCount) * this.pieceFactor;
-    // King Factor
+    // King Count
     score += (this.checkers.aiKings - this.checkers.playerKings) * this.kingFactor;
 
+    // TODO: Trapped kings
+    // TODO: Runaway piece -> a piece that can king without getting blocked
+    // for (const piece of this.playerPieces) {
+    //   if (piece.king) { // Check for trapped king
+    //     //
+    //   } else { // Check for runaway piece
+    //     //
+    //   }
+    // }
+    // for (const piece of this.aiPieces) {
+    //   if (piece.king) { // Check for trapped king
+    //     //
+    //   } else { // Check for runaway piece
+    //     //
+    //   }
+    // }
+
     //** Positional */
-    for (const [ x, y ] of this.edges) {
-      const cell = this.board.getCell(x, y);
-      if (cell instanceof Piece)
-        score += (cell.player ? -1 : 1) * this.edgeFactor;
-    }
-    for (const [ x, y ] of this.centers) {
-      const cell = this.board.getCell(x, y);
-      if (cell instanceof Piece)
-        score += (cell.player ? -1 : 1) * this.centerFactor;
+    let cell: any;
+    for (let y = 0; y < 8; y++) {
+      for (let x = y + 1 & 1; x < 8; x += 2) {
+        cell = this.board.getCell(x, y);
+        if (cell instanceof Piece) {
+          score += this.positionFactors[y][x] * (cell.player ? -1 : 1);
+        }
+      }
     }
 
     return score;
