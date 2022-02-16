@@ -15,6 +15,7 @@ class Checkers {
   input = new Input(this);
   // playerTurn: boolean = Math.random() > 0.5;
   playerTurn = true;
+  // playerTurn = false;
   inputting = true;
 
   playerPieces: Piece[] = [];
