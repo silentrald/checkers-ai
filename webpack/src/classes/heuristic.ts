@@ -10,12 +10,15 @@ class Heuristic {
 
   winFactor = 1000;
   pieceFactor = 4;
-  kingFactor = 40;
+  kingFactor = 8;
+  trapKingFactor = 3;
+  runawayFactor = 4;
 
   turn = true;
 
   /* eslint-disable */
-  positionFactors = [
+  // Mid Game Position Factors
+  midGamePositionFactors = [
     [ 0, 4, 0, 4, 0, 4, 0, 4 ],
     [ 4, 0, 3, 0, 3, 0, 3, 0 ],
     [ 0, 3, 0, 2, 0, 2, 0, 4 ],
@@ -53,20 +56,26 @@ class Heuristic {
 
     // TODO: Trapped kings
     // TODO: Runaway piece -> a piece that can king without getting blocked
-    // for (const piece of this.playerPieces) {
-    //   if (piece.king) { // Check for trapped king
-    //     //
-    //   } else { // Check for runaway piece
-    //     //
-    //   }
-    // }
-    // for (const piece of this.aiPieces) {
-    //   if (piece.king) { // Check for trapped king
-    //     //
-    //   } else { // Check for runaway piece
-    //     //
-    //   }
-    // }
+    for (const piece of this.playerPieces) {
+      const { x, y, } = piece.position;
+      if (piece.king) { // Check for trapped king
+        // if (this.isTrappedKing(piece))
+        // score += this.trapKingFactor;
+      } else { // Check for runaway piece
+        if (this.board.isRunaway(x, y, piece.player))
+          score -= this.runawayFactor;
+      }
+    }
+    for (const piece of this.aiPieces) {
+      const { x, y, } = piece.position;
+      if (piece.king) { // Check for trapped king
+        // if (this.isTrappedKing(piece))
+        // score -= this.trapKingFactor;
+      } else { // Check for runaway piece
+        if (this.board.isRunaway(x, y, piece.player))
+          score += this.runawayFactor;
+      }
+    }
 
     //** Positional */
     let cell: any;
@@ -74,7 +83,7 @@ class Heuristic {
       for (let x = y + 1 & 1; x < 8; x += 2) {
         cell = this.board.getCell(x, y);
         if (cell instanceof Piece) {
-          score += this.positionFactors[y][x] * (cell.player ? -1 : 1);
+          score += this.midGamePositionFactors[y][x] * (cell.player ? -1 : 1);
         }
       }
     }

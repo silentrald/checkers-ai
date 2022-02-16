@@ -42246,6 +42246,117 @@ class Board {
         const cell = this.grid[x + 1][y + 1];
         return cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"] && cell.player === opponent && !this.grid[x + 2][y + 2];
     }
+    // Move is not capturable
+    isCellOccupiedByPiece(x, y, player) {
+        const cell = this.grid[x][y];
+        return cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"] && cell.player === player;
+    }
+    isCellOccupiedByKing(x, y, player) {
+        const cell = this.grid[x][y];
+        return cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"] && cell.player === player && cell.king;
+    }
+    isTopLeftOpen(x, y, player) {
+        if (!this.isTopLeftEmpty(x, y))
+            return false;
+        x--;
+        y--;
+        if (player) {
+            // Edge Cases
+            if (y === 0)
+                return true;
+            if (x === 0) // BUG: Did not consider jump cases
+                return this.isTopRightEmpty(x, y);
+            // Normal
+            const bl = this.isBottomLeftEmpty(x, y);
+            const tr = this.isTopRightEmpty(x, y);
+            return !(this.isCellOccupiedByPiece(x - 1, y - 1, false) || (bl && this.isCellOccupiedByPiece(x + 1, y - 1, false) ||
+                tr && this.isCellOccupiedByKing(x - 1, y + 1, false)));
+        }
+        else { // TODO: Ai King Move
+        }
+        return false;
+    }
+    isTopRightOpen(x, y, player) {
+        if (!this.isTopRightEmpty(x, y))
+            return false;
+        x++;
+        y--;
+        if (player) {
+            // Edge Cases
+            if (y === 0)
+                return true;
+            if (x === 7) // BUG: Did not consider jump cases
+                return this.isTopLeftEmpty(x, y);
+            const br = this.isBottomRightEmpty(x, y);
+            const tl = this.isTopLeftEmpty(x, y);
+            return !(this.isCellOccupiedByPiece(x + 1, y - 1, false) || (br && this.isCellOccupiedByPiece(x - 1, y - 1, false) ||
+                tl && this.isCellOccupiedByKing(x + 1, y + 1, false)));
+        }
+        else { // TODO: Ai King Move
+        }
+        return false;
+    }
+    isBottomLeftOpen(x, y, player) {
+        if (!this.isBottomLeftEmpty(x, y))
+            return false;
+        x--;
+        y++;
+        if (player) { // TODO: Player king move
+        }
+        else {
+            // Edge Cases
+            if (y === 7)
+                return true;
+            if (x === 0) // BUG: Did not consider jump cases
+                return this.isBottomRightEmpty(x, y);
+            // Normal
+            const br = this.isBottomRightEmpty(x, y);
+            const tl = this.isTopLeftEmpty(x, y);
+            return !(this.isCellOccupiedByPiece(x - 1, y + 1, true) || (br && this.isCellOccupiedByKing(x - 1, y - 1, true) ||
+                tl && this.isCellOccupiedByPiece(x + 1, y + 1, true)));
+        }
+        return false;
+    }
+    isBottomRightOpen(x, y, player) {
+        if (!this.isBottomRightEmpty(x, y))
+            return false;
+        x++;
+        y++;
+        if (player) { // TODO: Player king move
+        }
+        else {
+            // Edge Cases
+            if (y === 7)
+                return true;
+            if (x === 7) // BUG: Did not consider jump cases
+                return this.isBottomLeftEmpty(x, y);
+            // Normal
+            const bl = this.isBottomLeftEmpty(x, y);
+            const tr = this.isTopRightEmpty(x, y);
+            return !(this.isCellOccupiedByPiece(x - 1, y + 1, true) || (bl && this.isCellOccupiedByKing(x + 1, y - 1, true) ||
+                tr && this.isCellOccupiedByPiece(x - 1, y + 1, true)));
+        }
+        return false;
+    }
+    isRunaway(x, y, player) {
+        if (player) {
+            if (y === 0)
+                return true;
+            if (this.isTopLeftOpen(x, y, player))
+                return this.isRunaway(x - 1, y - 1, player);
+            if (this.isTopRightOpen(x, y, player))
+                return this.isRunaway(x + 1, y - 1, player);
+        }
+        else {
+            if (y === 7)
+                return true;
+            if (this.isBottomLeftOpen(x, y, player))
+                return this.isRunaway(x - 1, y + 1, player);
+            if (this.isBottomRightOpen(x, y, player))
+                return this.isRunaway(x + 1, y + 1, player);
+        }
+        return false;
+    }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Board);
 
@@ -42796,10 +42907,13 @@ class Heuristic {
     constructor(checkers) {
         this.winFactor = 1000;
         this.pieceFactor = 4;
-        this.kingFactor = 40;
+        this.kingFactor = 8;
+        this.trapKingFactor = 3;
+        this.runawayFactor = 4;
         this.turn = true;
         /* eslint-disable */
-        this.positionFactors = [
+        // Mid Game Position Factors
+        this.midGamePositionFactors = [
             [0, 4, 0, 4, 0, 4, 0, 4],
             [4, 0, 3, 0, 3, 0, 3, 0],
             [0, 3, 0, 2, 0, 2, 0, 4],
@@ -42831,27 +42945,35 @@ class Heuristic {
         score += (this.checkers.aiKings - this.checkers.playerKings) * this.kingFactor;
         // TODO: Trapped kings
         // TODO: Runaway piece -> a piece that can king without getting blocked
-        // for (const piece of this.playerPieces) {
-        //   if (piece.king) { // Check for trapped king
-        //     //
-        //   } else { // Check for runaway piece
-        //     //
-        //   }
-        // }
-        // for (const piece of this.aiPieces) {
-        //   if (piece.king) { // Check for trapped king
-        //     //
-        //   } else { // Check for runaway piece
-        //     //
-        //   }
-        // }
+        for (const piece of this.playerPieces) {
+            const { x, y, } = piece.position;
+            if (piece.king) { // Check for trapped king
+                // if (this.isTrappedKing(piece))
+                // score += this.trapKingFactor;
+            }
+            else { // Check for runaway piece
+                if (this.board.isRunaway(x, y, piece.player))
+                    score -= this.runawayFactor;
+            }
+        }
+        for (const piece of this.aiPieces) {
+            const { x, y, } = piece.position;
+            if (piece.king) { // Check for trapped king
+                // if (this.isTrappedKing(piece))
+                // score -= this.trapKingFactor;
+            }
+            else { // Check for runaway piece
+                if (this.board.isRunaway(x, y, piece.player))
+                    score += this.runawayFactor;
+            }
+        }
         //** Positional */
         let cell;
         for (let y = 0; y < 8; y++) {
             for (let x = y + 1 & 1; x < 8; x += 2) {
                 cell = this.board.getCell(x, y);
                 if (cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"]) {
-                    score += this.positionFactors[y][x] * (cell.player ? -1 : 1);
+                    score += this.midGamePositionFactors[y][x] * (cell.player ? -1 : 1);
                 }
             }
         }
@@ -44436,6 +44558,7 @@ var _a;
 
 const checkers = new _classes_checkers__WEBPACK_IMPORTED_MODULE_1__["default"]();
 (_a = document.getElementById('checkers')) === null || _a === void 0 ? void 0 : _a.appendChild(checkers.app.view);
+window.checkers = checkers;
 
 })();
 

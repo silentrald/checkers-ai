@@ -103,6 +103,146 @@ class Board {
     const cell = this.grid[x + 1][y + 1];
     return cell instanceof Piece && cell.player === opponent && !this.grid[x + 2][y + 2];
   }
+
+  // Move is not capturable
+  isCellOccupiedByPiece(x: number, y: number, player: boolean): boolean {
+    const cell = this.grid[x][y];
+    return cell instanceof Piece && cell.player === player;
+  }
+
+  isCellOccupiedByKing(x: number, y: number, player: boolean): boolean {
+    const cell = this.grid[x][y];
+    return cell instanceof Piece && cell.player === player && cell.king;
+  }
+
+  isTopLeftOpen(x: number, y: number, player: boolean): boolean {
+    if (!this.isTopLeftEmpty(x, y))
+      return false;
+
+    x--; y--;
+
+    if (player) {
+      // Edge Cases
+      if (y === 0)
+        return true;
+      if (x === 0) // BUG: Did not consider jump cases
+        return this.isTopRightEmpty(x, y);
+
+      // Normal
+      const bl = this.isBottomLeftEmpty(x, y);
+      const tr = this.isTopRightEmpty(x, y);
+      return !(this.isCellOccupiedByPiece(x - 1, y - 1, false) || (
+        bl && this.isCellOccupiedByPiece(x + 1, y - 1, false) ||
+        tr && this.isCellOccupiedByKing(x - 1, y + 1, false)
+      ));
+    } else { // TODO: Ai King Move
+
+    }
+
+    return false;
+  }
+
+  isTopRightOpen(x: number, y: number, player: boolean): boolean {
+    if (!this.isTopRightEmpty(x, y))
+      return false;
+
+    x++; y--;
+
+    if (player) {
+      // Edge Cases
+      if (y === 0)
+        return true;
+      if (x === 7) // BUG: Did not consider jump cases
+        return this.isTopLeftEmpty(x, y);
+
+      const br = this.isBottomRightEmpty(x, y);
+      const tl = this.isTopLeftEmpty(x, y);
+      return !(this.isCellOccupiedByPiece(x + 1, y - 1, false) || (
+        br && this.isCellOccupiedByPiece(x - 1, y - 1, false) ||
+        tl && this.isCellOccupiedByKing(x + 1, y + 1, false)
+      ));
+    } else { // TODO: Ai King Move
+
+    }
+
+    return false;
+  }
+
+  isBottomLeftOpen(x: number, y: number, player: boolean): boolean {
+    if (!this.isBottomLeftEmpty(x, y))
+      return false;
+
+    x--; y++;
+
+    if (player) { // TODO: Player king move
+
+    } else {
+      // Edge Cases
+      if (y === 7)
+        return true;
+      if (x === 0) // BUG: Did not consider jump cases
+        return this.isBottomRightEmpty(x, y);
+
+      // Normal
+      const br = this.isBottomRightEmpty(x, y);
+      const tl = this.isTopLeftEmpty(x, y);
+      return !(this.isCellOccupiedByPiece(x - 1, y + 1, true) || (
+        br && this.isCellOccupiedByKing(x - 1, y - 1, true) ||
+        tl && this.isCellOccupiedByPiece(x + 1, y + 1, true)
+      ));
+    }
+
+    return false;
+  }
+
+  isBottomRightOpen(x: number, y: number, player: boolean): boolean {
+    if (!this.isBottomRightEmpty(x, y))
+      return false;
+
+    x++; y++;
+
+    if (player) { // TODO: Player king move
+
+    } else {
+    // Edge Cases
+      if (y === 7)
+        return true;
+      if (x === 7) // BUG: Did not consider jump cases
+        return this.isBottomLeftEmpty(x, y);
+
+      // Normal
+      const bl = this.isBottomLeftEmpty(x, y);
+      const tr = this.isTopRightEmpty(x, y);
+      return !(this.isCellOccupiedByPiece(x - 1, y + 1, true) || (
+        bl && this.isCellOccupiedByKing(x + 1, y - 1, true) ||
+        tr && this.isCellOccupiedByPiece(x - 1, y + 1, true)
+      ));
+    }
+
+    return false;
+  }
+
+  isRunaway(x: number, y: number, player: boolean): boolean {
+    if (player) {
+      if (y === 0)
+        return true;
+
+      if (this.isTopLeftOpen(x, y, player))
+        return this.isRunaway(x - 1, y - 1, player);
+      if (this.isTopRightOpen(x, y, player))
+        return this.isRunaway(x + 1, y - 1, player);
+    } else {
+      if (y === 7)
+        return true;
+
+      if (this.isBottomLeftOpen(x, y, player))
+        return this.isRunaway(x - 1, y + 1, player);
+      if (this.isBottomRightOpen(x, y, player))
+        return this.isRunaway(x + 1, y + 1, player);
+    }
+
+    return false;
+  }
 }
 
 export default Board;
