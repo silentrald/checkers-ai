@@ -42247,7 +42247,7 @@ class Board {
         return cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"] && cell.player === opponent && !this.grid[x + 2][y + 2];
     }
     // Move is not capturable
-    isCellOccupiedByPiece(x, y, player) {
+    isCellOccupiedByPieceOrKing(x, y, player) {
         const cell = this.grid[x][y];
         return cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"] && cell.player === player;
     }
@@ -42255,107 +42255,218 @@ class Board {
         const cell = this.grid[x][y];
         return cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"] && cell.player === player && cell.king;
     }
-    isTopLeftOpen(x, y, player) {
+    // Open Square for Pieces
+    isTopLeftPlayerPieceOpen(x, y) {
         if (!this.isTopLeftEmpty(x, y))
             return false;
         x--;
         y--;
-        if (player) {
-            // Edge Cases
-            if (y === 0)
-                return true;
-            if (x === 0) // BUG: Did not consider jump cases
-                return this.isTopRightEmpty(x, y);
-            // Normal
-            const bl = this.isBottomLeftEmpty(x, y);
-            const tr = this.isTopRightEmpty(x, y);
-            return !(this.isCellOccupiedByPiece(x - 1, y - 1, false) || (bl && this.isCellOccupiedByPiece(x + 1, y - 1, false) ||
-                tr && this.isCellOccupiedByKing(x - 1, y + 1, false)));
-        }
-        else { // TODO: Ai King Move
-        }
-        return false;
+        // Edge Cases
+        if (y === 0)
+            return true;
+        if (x === 0) // BUG: Did not consider jump cases
+            return this.isTopRightEmpty(x, y);
+        // Normal
+        const bl = this.isBottomLeftEmpty(x, y);
+        const tr = this.isTopRightEmpty(x, y);
+        return !(this.isCellOccupiedByPieceOrKing(x - 1, y - 1, false) || (bl && this.isCellOccupiedByPieceOrKing(x + 1, y - 1, false) ||
+            tr && this.isCellOccupiedByKing(x - 1, y + 1, false)));
     }
-    isTopRightOpen(x, y, player) {
+    isTopRightPlayerPieceOpen(x, y) {
         if (!this.isTopRightEmpty(x, y))
             return false;
         x++;
         y--;
-        if (player) {
-            // Edge Cases
-            if (y === 0)
-                return true;
-            if (x === 7) // BUG: Did not consider jump cases
-                return this.isTopLeftEmpty(x, y);
-            const br = this.isBottomRightEmpty(x, y);
-            const tl = this.isTopLeftEmpty(x, y);
-            return !(this.isCellOccupiedByPiece(x + 1, y - 1, false) || (br && this.isCellOccupiedByPiece(x - 1, y - 1, false) ||
-                tl && this.isCellOccupiedByKing(x + 1, y + 1, false)));
-        }
-        else { // TODO: Ai King Move
-        }
-        return false;
+        // Edge Cases
+        if (y === 0)
+            return true;
+        if (x === 7) // BUG: Did not consider jump cases
+            return this.isTopLeftEmpty(x, y);
+        const br = this.isBottomRightEmpty(x, y);
+        const tl = this.isTopLeftEmpty(x, y);
+        return !(this.isCellOccupiedByPieceOrKing(x + 1, y - 1, false) || (br && this.isCellOccupiedByPieceOrKing(x - 1, y - 1, false) ||
+            tl && this.isCellOccupiedByKing(x + 1, y + 1, false)));
     }
-    isBottomLeftOpen(x, y, player) {
+    isBottomLeftAiPieceOpen(x, y) {
         if (!this.isBottomLeftEmpty(x, y))
             return false;
         x--;
         y++;
-        if (player) { // TODO: Player king move
-        }
-        else {
-            // Edge Cases
-            if (y === 7)
-                return true;
-            if (x === 0) // BUG: Did not consider jump cases
-                return this.isBottomRightEmpty(x, y);
-            // Normal
-            const br = this.isBottomRightEmpty(x, y);
-            const tl = this.isTopLeftEmpty(x, y);
-            return !(this.isCellOccupiedByPiece(x - 1, y + 1, true) || (br && this.isCellOccupiedByKing(x - 1, y - 1, true) ||
-                tl && this.isCellOccupiedByPiece(x + 1, y + 1, true)));
-        }
-        return false;
+        // Edge Cases
+        if (y === 7)
+            return true;
+        if (x === 0) // BUG: Did not consider jump cases
+            return this.isBottomRightEmpty(x, y);
+        // Normal
+        const br = this.isBottomRightEmpty(x, y);
+        const tl = this.isTopLeftEmpty(x, y);
+        return !(this.isCellOccupiedByPieceOrKing(x - 1, y + 1, true) || (br && this.isCellOccupiedByKing(x - 1, y - 1, true) ||
+            tl && this.isCellOccupiedByPieceOrKing(x + 1, y + 1, true)));
     }
-    isBottomRightOpen(x, y, player) {
+    isBottomRightAiPieceOpen(x, y) {
         if (!this.isBottomRightEmpty(x, y))
             return false;
         x++;
         y++;
-        if (player) { // TODO: Player king move
-        }
-        else {
-            // Edge Cases
-            if (y === 7)
-                return true;
-            if (x === 7) // BUG: Did not consider jump cases
-                return this.isBottomLeftEmpty(x, y);
-            // Normal
-            const bl = this.isBottomLeftEmpty(x, y);
-            const tr = this.isTopRightEmpty(x, y);
-            return !(this.isCellOccupiedByPiece(x - 1, y + 1, true) || (bl && this.isCellOccupiedByKing(x + 1, y - 1, true) ||
-                tr && this.isCellOccupiedByPiece(x - 1, y + 1, true)));
-        }
-        return false;
+        // Edge Cases
+        if (y === 7)
+            return true;
+        if (x === 7) // BUG: Did not consider jump cases
+            return this.isBottomLeftEmpty(x, y);
+        // Normal
+        const bl = this.isBottomLeftEmpty(x, y);
+        const tr = this.isTopRightEmpty(x, y);
+        return !(this.isCellOccupiedByPieceOrKing(x - 1, y + 1, true) || (bl && this.isCellOccupiedByKing(x + 1, y - 1, true) ||
+            tr && this.isCellOccupiedByPieceOrKing(x - 1, y + 1, true)));
     }
     isRunaway(x, y, player) {
         if (player) {
             if (y === 0)
                 return true;
-            if (this.isTopLeftOpen(x, y, player))
+            if (this.isTopLeftPlayerPieceOpen(x, y))
                 return this.isRunaway(x - 1, y - 1, player);
-            if (this.isTopRightOpen(x, y, player))
+            if (this.isTopRightPlayerPieceOpen(x, y))
                 return this.isRunaway(x + 1, y - 1, player);
         }
         else {
             if (y === 7)
                 return true;
-            if (this.isBottomLeftOpen(x, y, player))
+            if (this.isBottomLeftAiPieceOpen(x, y))
                 return this.isRunaway(x - 1, y + 1, player);
-            if (this.isBottomRightOpen(x, y, player))
+            if (this.isBottomRightAiPieceOpen(x, y))
                 return this.isRunaway(x + 1, y + 1, player);
         }
         return false;
+    }
+    // Open Square for Kings
+    isTopLeftKingOpen(x, y, player) {
+        if (!this.isTopLeftEmpty(x, y))
+            return false;
+        x--;
+        y--;
+        const bl = this.isBottomLeftEmpty(x, y);
+        const tr = this.isTopRightEmpty(x, y);
+        if (player) {
+            return !(this.isCellOccupiedByPieceOrKing(x - 1, y - 1, false) || (bl && this.isCellOccupiedByPieceOrKing(x + 1, y - 1, false) ||
+                tr && this.isCellOccupiedByKing(x - 1, y + 1, false)));
+        }
+        else {
+            return !(this.isCellOccupiedByKing(x - 1, y - 1, true) || (bl && this.isCellOccupiedByKing(x + 1, y - 1, true) ||
+                tr && this.isCellOccupiedByPieceOrKing(x - 1, y + 1, true)));
+        }
+    }
+    isTopRightKingOpen(x, y, player) {
+        if (!this.isTopRightEmpty(x, y))
+            return false;
+        x++;
+        y--;
+        // Edge Cases
+        if (y === 0)
+            return true;
+        if (x === 7) // BUG: Did not consider jump cases
+            return this.isTopLeftEmpty(x, y);
+        const br = this.isBottomRightEmpty(x, y);
+        const tl = this.isTopLeftEmpty(x, y);
+        if (player) {
+            return !(this.isCellOccupiedByPieceOrKing(x + 1, y - 1, false) || (br && this.isCellOccupiedByPieceOrKing(x - 1, y - 1, false) ||
+                tl && this.isCellOccupiedByKing(x + 1, y + 1, false)));
+        }
+        else {
+            return !(this.isCellOccupiedByKing(x + 1, y - 1, true) || (br && this.isCellOccupiedByKing(x - 1, y - 1, true) ||
+                tl && this.isCellOccupiedByPieceOrKing(x + 1, y + 1, true)));
+        }
+    }
+    isBottomLeftKingOpen(x, y, player) {
+        if (!this.isBottomLeftEmpty(x, y))
+            return false;
+        x--;
+        y++;
+        // Edge Cases
+        if (y === 7)
+            return true;
+        if (x === 0) // BUG: Did not consider jump cases
+            return this.isBottomRightEmpty(x, y);
+        // Normal
+        const br = this.isBottomRightEmpty(x, y);
+        const tl = this.isTopLeftEmpty(x, y);
+        if (player) {
+            return !(this.isCellOccupiedByKing(x - 1, y + 1, false) || (br && this.isCellOccupiedByPieceOrKing(x - 1, y - 1, false) ||
+                tl && this.isCellOccupiedByKing(x + 1, y + 1, false)));
+        }
+        else {
+            return !(this.isCellOccupiedByPieceOrKing(x - 1, y + 1, true) || (br && this.isCellOccupiedByKing(x - 1, y - 1, true) ||
+                tl && this.isCellOccupiedByPieceOrKing(x + 1, y + 1, true)));
+        }
+    }
+    isBottomRightKingOpen(x, y, player) {
+        if (!this.isBottomRightEmpty(x, y))
+            return false;
+        x++;
+        y++;
+        // Edge Cases
+        if (y === 7)
+            return true;
+        if (x === 7) // BUG: Did not consider jump cases
+            return this.isBottomLeftEmpty(x, y);
+        // Normal
+        const bl = this.isBottomLeftEmpty(x, y);
+        const tr = this.isTopRightEmpty(x, y);
+        if (player) {
+            return !(this.isCellOccupiedByKing(x - 1, y + 1, false) || (bl && this.isCellOccupiedByPieceOrKing(x + 1, y - 1, false) ||
+                tr && this.isCellOccupiedByKing(x - 1, y + 1, false)));
+        }
+        else {
+            return !(this.isCellOccupiedByPieceOrKing(x - 1, y + 1, true) || (bl && this.isCellOccupiedByKing(x + 1, y - 1, true) ||
+                tr && this.isCellOccupiedByPieceOrKing(x - 1, y + 1, true)));
+        }
+    }
+    isKingTrapped(x, y, player) {
+        const top = y === 0;
+        const bot = y === 7;
+        const left = x === 0;
+        const right = x === 7;
+        // Corner Checks
+        if (bot && left)
+            return !this.isTopRightKingOpen(x, y, player);
+        if (top && right)
+            return !this.isBottomLeftKingOpen(x, y, player);
+        // Edge
+        if (top) {
+            if (x === 1) { // Double Corner
+                return !(this.isBottomRightKingOpen(x, y, player) &&
+                    (this.grid[0][1] ? true : this.isBottomRightKingOpen(0, 1, player)));
+            }
+            return !(this.isBottomLeftKingOpen(x, y, player) || this.isBottomRightKingOpen(x, y, player));
+        }
+        if (left) {
+            if (y === 1) { // Double Corner
+                return !(this.isBottomRightKingOpen(x, y, player) &&
+                    (this.grid[1][0] ? true : this.isBottomRightKingOpen(0, 1, player)));
+            }
+            return !(this.isTopRightKingOpen(x, y, player) || this.isBottomRightKingOpen(x, y, player));
+        }
+        if (bot) {
+            if (x === 6) { // Double Corner
+                return !(this.isTopLeftKingOpen(x, y, player) &&
+                    (this.grid[7][6] ? true : this.isTopLeftKingOpen(7, 6, player)));
+            }
+            return !(this.isTopLeftKingOpen(x, y, player) || this.isTopRightKingOpen(x, y, player));
+        }
+        if (right) {
+            if (y === 6) { // Double Corner
+                return !(this.isTopLeftKingOpen(x, y, player) &&
+                    (this.grid[6][7] ? true : this.isTopLeftKingOpen(6, 7, player)));
+            }
+            return !(this.isTopLeftKingOpen(x, y, player) || this.isBottomLeftKingOpen(x, y, player));
+        }
+        // TODO: Check this if there is something wrong with the logic
+        if (x === 1 || x === 6 || y === 1 || y === 6)
+            return false;
+        // Center Trap
+        return !(this.isTopLeftKingOpen(x, y, player) ||
+            this.isTopRightKingOpen(x, y, player) ||
+            this.isBottomLeftKingOpen(x, y, player) ||
+            this.isBottomRightKingOpen(x, y, player));
     }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Board);
@@ -42398,6 +42509,7 @@ class Checkers {
         this.input = new _input__WEBPACK_IMPORTED_MODULE_4__["default"](this);
         // playerTurn: boolean = Math.random() > 0.5;
         this.playerTurn = true;
+        // playerTurn = false;
         this.inputting = true;
         this.playerPieces = [];
         this.aiPieces = [];
@@ -42943,13 +43055,11 @@ class Heuristic {
         score += (aiCount - playerCount) * this.pieceFactor;
         // King Count
         score += (this.checkers.aiKings - this.checkers.playerKings) * this.kingFactor;
-        // TODO: Trapped kings
-        // TODO: Runaway piece -> a piece that can king without getting blocked
         for (const piece of this.playerPieces) {
             const { x, y, } = piece.position;
             if (piece.king) { // Check for trapped king
-                // if (this.isTrappedKing(piece))
-                // score += this.trapKingFactor;
+                if (this.board.isKingTrapped(x, y, piece.player))
+                    score += this.trapKingFactor;
             }
             else { // Check for runaway piece
                 if (this.board.isRunaway(x, y, piece.player))
@@ -42959,8 +43069,8 @@ class Heuristic {
         for (const piece of this.aiPieces) {
             const { x, y, } = piece.position;
             if (piece.king) { // Check for trapped king
-                // if (this.isTrappedKing(piece))
-                // score -= this.trapKingFactor;
+                if (this.board.isKingTrapped(x, y, piece.player))
+                    score -= this.trapKingFactor;
             }
             else { // Check for runaway piece
                 if (this.board.isRunaway(x, y, piece.player))

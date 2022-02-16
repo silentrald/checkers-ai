@@ -54,13 +54,11 @@ class Heuristic {
     // King Count
     score += (this.checkers.aiKings - this.checkers.playerKings) * this.kingFactor;
 
-    // TODO: Trapped kings
-    // TODO: Runaway piece -> a piece that can king without getting blocked
     for (const piece of this.playerPieces) {
       const { x, y, } = piece.position;
       if (piece.king) { // Check for trapped king
-        // if (this.isTrappedKing(piece))
-        // score += this.trapKingFactor;
+        if (this.board.isKingTrapped(x, y, piece.player))
+          score += this.trapKingFactor;
       } else { // Check for runaway piece
         if (this.board.isRunaway(x, y, piece.player))
           score -= this.runawayFactor;
@@ -69,8 +67,8 @@ class Heuristic {
     for (const piece of this.aiPieces) {
       const { x, y, } = piece.position;
       if (piece.king) { // Check for trapped king
-        // if (this.isTrappedKing(piece))
-        // score -= this.trapKingFactor;
+        if (this.board.isKingTrapped(x, y, piece.player))
+          score -= this.trapKingFactor;
       } else { // Check for runaway piece
         if (this.board.isRunaway(x, y, piece.player))
           score += this.runawayFactor;
