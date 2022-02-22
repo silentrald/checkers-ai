@@ -19,7 +19,7 @@ class Board {
   aiPieces: Piece[] = [];
   selectedPiece: Piece | null =  null;
   highlights: Highlight[] = [];
-  capturePieces: Piece[] = [];
+  jumpPieces: Piece[] = [];
   tempCaptured: Piece[] = [];
 
   constructor() {
@@ -102,7 +102,7 @@ class Board {
     this.aiPieces = [];
     this.selectedPiece =  null;
     this.highlights = [];
-    this.capturePieces = [];
+    this.jumpPieces = [];
     this.tempCaptured = [];
 
     const [
@@ -174,28 +174,28 @@ class Board {
   }
 
   // Capture Checks
-  isTopLeftCapturable(x: number, y: number, opponent: boolean): boolean {
+  isTopLeftJumpable(x: number, y: number, opponent: boolean): boolean {
     if (x < 2 || y < 2) return false;
 
     const cell = this.grid[x - 1][y - 1];
     return cell instanceof Piece && cell.player === opponent && !this.grid[x - 2][y - 2];
   }
 
-  isTopRightCapturable(x: number, y: number, opponent: boolean): boolean {
+  isTopRightJumpable(x: number, y: number, opponent: boolean): boolean {
     if (x > 5 || y < 2) return false;
 
     const cell = this.grid[x + 1][y - 1];
     return cell instanceof Piece && cell.player === opponent && !this.grid[x + 2][y - 2];
   }
 
-  isBottomLeftCapturable(x: number, y: number, opponent: boolean): boolean {
+  isBottomLeftJumpable(x: number, y: number, opponent: boolean): boolean {
     if (x < 2 || y > 5) return false;
 
     const cell = this.grid[x - 1][y + 1];
     return cell instanceof Piece && cell.player === opponent && !this.grid[x - 2][y + 2];
   }
 
-  isBottomRightCapturable(x: number, y: number, opponent: boolean): boolean {
+  isBottomRightJumpable(x: number, y: number, opponent: boolean): boolean {
     if (x > 5 || y > 5) return false;
 
     const cell = this.grid[x + 1][y + 1];

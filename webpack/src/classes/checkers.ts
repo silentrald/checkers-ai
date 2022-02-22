@@ -76,17 +76,17 @@ class Checkers {
     this.resetHighlights();
 
     // Mandatory Jumps
-    if (this.board.capturePieces.length > 0) {
+    if (this.board.jumpPieces.length > 0) {
       if (piece.king) {
-        if (this.board.isBottomLeftCapturable(x, y, false))
+        if (this.board.isBottomLeftJumpable(x, y, false))
           this.addHighlight(x - 2, y + 2);
-        if (this.board.isBottomRightCapturable(x, y, false))
+        if (this.board.isBottomRightJumpable(x, y, false))
           this.addHighlight(x + 2, y + 2);
       }
 
-      if (this.board.isTopLeftCapturable(x, y, false))
+      if (this.board.isTopLeftJumpable(x, y, false))
         this.addHighlight(x - 2, y - 2);
-      if (this.board.isTopRightCapturable(x, y, false))
+      if (this.board.isTopRightJumpable(x, y, false))
         this.addHighlight(x + 2, y - 2);
     } else { // Normal Move
       if (piece.king) {
@@ -105,19 +105,19 @@ class Checkers {
     this.draw();
   }
 
-  highlightAdditionalCaptures(piece: Piece) {
+  highlightAdditionalJumps(piece: Piece) {
     const { x, y, } = piece.position;
 
     if (piece.king) {
-      if (this.board.isBottomLeftCapturable(x, y, false))
+      if (this.board.isBottomLeftJumpable(x, y, false))
         this.addHighlight(x - 2, y + 2);
-      if (this.board.isBottomRightCapturable(x, y, false))
+      if (this.board.isBottomRightJumpable(x, y, false))
         this.addHighlight(x + 2, y + 2);
     }
 
-    if (this.board.isTopLeftCapturable(x, y, false))
+    if (this.board.isTopLeftJumpable(x, y, false))
       this.addHighlight(x - 2, y - 2);
-    if (this.board.isTopRightCapturable(x, y, false))
+    if (this.board.isTopRightJumpable(x, y, false))
       this.addHighlight(x + 2, y - 2);
   }
 
@@ -128,14 +128,14 @@ class Checkers {
 
     const piece = this.board.selectedPiece!;
 
-    if (this.capturing || this.board.capturePieces.length > 0) {
+    if (this.capturing || this.board.jumpPieces.length > 0) {
       this.jump(piece, x, y);
       this.board.tempCaptured.splice(0);
-      this.board.capturePieces.splice(0);
+      this.board.jumpPieces.splice(0);
 
       if (!this.promoted) {
       // Check if the current piece can still capture
-        this.highlightAdditionalCaptures(piece);
+        this.highlightAdditionalJumps(piece);
         if (this.board.highlights.length > 0) {
           this.capturing = true;
           this.inputting = true;
@@ -280,8 +280,8 @@ class Checkers {
 
   // Turns
   setupTurn() {
-    this.board.capturePieces.splice(0);
-    this.board.capturePieces = this.getForceJumps(this.board.playerTurn);
+    this.board.jumpPieces.splice(0);
+    this.board.jumpPieces = this.getForceJumps(this.board.playerTurn);
     this.promoted = false;
 
     // Change State
@@ -355,7 +355,7 @@ class Checkers {
   }
 
   hasAvailableMoves(playerTurn: boolean): boolean {
-    const capturing = this.board.capturePieces.length > 0;
+    const capturing = this.board.jumpPieces.length > 0;
     if (capturing) {
       return true;
     } else {
@@ -386,30 +386,30 @@ class Checkers {
   }
 
   getForceJumps(player: boolean): Piece[] {
-    const capturePieces: Piece[] = [];
+    const jumpPieces: Piece[] = [];
 
     if (player) {
       for (const piece of this.board.playerPieces) {
         const { x, y, } = piece.position;
 
-        if (this.board.isTopLeftCapturable(x, y, false)) {
-          capturePieces.push(piece);
+        if (this.board.isTopLeftJumpable(x, y, false)) {
+          jumpPieces.push(piece);
           continue;
         }
 
-        if (this.board.isTopRightCapturable(x, y, false)) {
-          capturePieces.push(piece);
+        if (this.board.isTopRightJumpable(x, y, false)) {
+          jumpPieces.push(piece);
           continue;
         }
 
         if (piece.king) {
-          if (this.board.isBottomLeftCapturable(x, y, false)) {
-            capturePieces.push(piece);
+          if (this.board.isBottomLeftJumpable(x, y, false)) {
+            jumpPieces.push(piece);
             continue;
           }
 
-          if (this.board.isBottomRightCapturable(x, y, false)) {
-            capturePieces.push(piece);
+          if (this.board.isBottomRightJumpable(x, y, false)) {
+            jumpPieces.push(piece);
             continue;
           }
         }
@@ -418,31 +418,31 @@ class Checkers {
       for (const piece of this.board.aiPieces) {
         const { x, y, } = piece.position;
 
-        if (this.board.isBottomLeftCapturable(x, y, true)) {
-          capturePieces.push(piece);
+        if (this.board.isBottomLeftJumpable(x, y, true)) {
+          jumpPieces.push(piece);
           continue;
         }
 
-        if (this.board.isBottomRightCapturable(x, y, true)) {
-          capturePieces.push(piece);
+        if (this.board.isBottomRightJumpable(x, y, true)) {
+          jumpPieces.push(piece);
           continue;
         }
 
         if (piece.king) {
-          if (this.board.isTopLeftCapturable(x, y, true)) {
-            capturePieces.push(piece);
+          if (this.board.isTopLeftJumpable(x, y, true)) {
+            jumpPieces.push(piece);
             continue;
           }
 
-          if (this.board.isTopRightCapturable(x, y, true)) {
-            capturePieces.push(piece);
+          if (this.board.isTopRightJumpable(x, y, true)) {
+            jumpPieces.push(piece);
             continue;
           }
         }
       }
     }
 
-    return capturePieces;
+    return jumpPieces;
   }
 
   // Draw Functions
@@ -451,7 +451,7 @@ class Checkers {
     this.drawPieces();
     this.drawHighlights();
     this.drawSelectedPiece();
-    this.drawCapturePieces();
+    this.drawJumpPieces();
   }
 
   drawTiles() {
@@ -524,12 +524,12 @@ class Checkers {
     this.graphics.endFill();
   }
 
-  drawCapturePieces() {
-    if (this.board.capturePieces.length < 1) return;
+  drawJumpPieces() {
+    if (this.board.jumpPieces.length < 1) return;
 
     this.graphics.lineStyle(OUTLINE_SIZE, COLORS.RED);
     this.graphics.beginFill(undefined, 0);
-    for (const pieces of this.board.capturePieces) {
+    for (const pieces of this.board.jumpPieces) {
       this.graphics.drawShape(pieces);
     }
     this.graphics.lineStyle(0);
