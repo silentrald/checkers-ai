@@ -37,69 +37,20 @@ class Checkers {
     this.graphics.on('mousedown', (ev) => this.input.mousedown(ev));
 
     // Setup Pieces
-    this.setupPieces();
-    // this.setupEndgamePieces();
+    this.setupBoard('B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12');
 
     // Redraw
     this.draw();
 
-    if (!this.board.playerTurn) {
+    if (this.board.playerTurn) {
+      this.passToPlayer();
+    } else {
       this.passToAi();
     }
   }
 
-  setupPieces() {
-    // Setup Pieces
-    let piece: Piece | undefined;
-    for (let i = 0; i < 12; i++) {
-      const x = i % 4 << 1;
-      const y = Math.floor(i / 4);
-
-      const pxAi = x + (y + 1 & 1);
-      const pyAi = y;
-      piece = new Piece(pxAi, pyAi, false);
-      this.board.setCell(pxAi, pyAi, piece);
-      this.board.aiPieces.push(piece);
-
-      const pxPl = x + (y & 1);
-      const pyPl = 7 - y;
-      piece = new Piece(pxPl, pyPl, true);
-      this.board.setCell(pxPl, pyPl, piece);
-      this.board.playerPieces.push(piece);
-    }
-  }
-
-  setupEndgamePieces() {
-    this.state = STATES.END;
-    let piece: Piece | undefined;
-    const pieceList = [
-      {
-        x: 0,
-        y: 1,
-        player: true,
-        king: false,
-      }, {
-        x: 1,
-        y: 2,
-        player: false,
-        king: false,
-      }
-    ];
-    for (const {
-      x, y, player, king,
-    } of pieceList) {
-      piece = new Piece(x, y, player);
-      piece.king = king;
-
-      this.board.setCell(x, y, piece);
-      this.board.setKing(x, y, king);
-
-      if (player) {
-        this.board.playerPieces.push(piece);
-      } else {
-        this.board.aiPieces.push(piece);
-      }
-    }
+  setupBoard(fen: string) {
+    this.board.setBoard(fen);
   }
 
   // Highlights

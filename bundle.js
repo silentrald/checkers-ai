@@ -42373,6 +42373,58 @@ class Board {
         //   this.state.right.toString(16).padStart(8, '0') +
         //   this.state.kings.toString(16).padStart(8, '0');
     }
+    // W - Ai
+    // B - Player
+    setBoard(fen) {
+        this.playerKings = 0;
+        this.aiKings = 0;
+        this.playerPieces = [];
+        this.aiPieces = [];
+        this.selectedPiece = null;
+        this.highlights = [];
+        this.capturePieces = [];
+        this.tempCaptured = [];
+        const [turn, ais, players] = fen.split(':');
+        this.playerTurn = turn === 'B';
+        let pos = 0, king = false;
+        for (const p of ais.slice(1).split(',')) {
+            if (p[0] === 'K') {
+                pos = +p.slice(1) - 1;
+                king = true;
+                this.aiKings++;
+            }
+            else {
+                pos = +p - 1;
+                king = false;
+            }
+            const y = 7 - Math.floor(pos / 4);
+            const x = (3 - (pos % 4) << 1) + ((y + 1) & 1);
+            const piece = new _piece__WEBPACK_IMPORTED_MODULE_0__["default"](x, y, false, king);
+            this.aiPieces.push(piece);
+            this.setCell(x, y, piece);
+            this.setKing(x, y, king);
+        }
+        for (const p of players.slice(1).split(',')) {
+            if (p[0] === 'K') {
+                pos = +p.slice(1) - 1;
+                king = true;
+                this.playerKings++;
+            }
+            else {
+                pos = +p - 1;
+                king = false;
+            }
+            const y = 7 - Math.floor(pos / 4);
+            const x = (3 - (pos % 4) << 1) + ((y + 1) & 1);
+            const piece = new _piece__WEBPACK_IMPORTED_MODULE_0__["default"](x, y, true, king);
+            this.playerPieces.push(piece);
+            this.setCell(x, y, piece);
+            this.setKing(x, y, king);
+        }
+    }
+    getBoard() {
+        return '';
+    }
     // Move Check
     isTopLeftEmpty(x, y) {
         return x > 0 && y > 0 && !this.grid[x - 1][y - 1];
@@ -42671,14 +42723,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var pixi_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! pixi.js */ "./node_modules/pixi.js/dist/esm/pixi.js");
 /* harmony import */ var _board__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./board */ "./src/classes/board.ts");
-/* harmony import */ var _piece__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./piece */ "./src/classes/piece.ts");
-/* harmony import */ var _highlight__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./highlight */ "./src/classes/highlight.ts");
-/* harmony import */ var _input__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./input */ "./src/classes/input.ts");
-/* harmony import */ var _ai__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./ai */ "./src/classes/ai.ts");
-/* harmony import */ var _config_colors__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../config/colors */ "./src/config/colors.ts");
-/* harmony import */ var _config_values__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../config/values */ "./src/config/values.ts");
-/* harmony import */ var _config_states__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../config/states */ "./src/config/states.ts");
-
+/* harmony import */ var _highlight__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./highlight */ "./src/classes/highlight.ts");
+/* harmony import */ var _input__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./input */ "./src/classes/input.ts");
+/* harmony import */ var _ai__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./ai */ "./src/classes/ai.ts");
+/* harmony import */ var _config_colors__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../config/colors */ "./src/config/colors.ts");
+/* harmony import */ var _config_values__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../config/values */ "./src/config/values.ts");
+/* harmony import */ var _config_states__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../config/states */ "./src/config/states.ts");
 
 
 
@@ -42692,78 +42742,36 @@ class Checkers {
         this.app = new pixi_js__WEBPACK_IMPORTED_MODULE_0__.Application();
         this.graphics = new pixi_js__WEBPACK_IMPORTED_MODULE_0__.Graphics();
         this.board = new _board__WEBPACK_IMPORTED_MODULE_1__["default"]();
-        this.input = new _input__WEBPACK_IMPORTED_MODULE_4__["default"](this);
-        this.ai = new _ai__WEBPACK_IMPORTED_MODULE_5__["default"](this);
+        this.input = new _input__WEBPACK_IMPORTED_MODULE_3__["default"](this);
+        this.ai = new _ai__WEBPACK_IMPORTED_MODULE_4__["default"](this);
         this.inputting = true;
         this.capturing = false;
         this.promoted = false;
-        this.state = _config_states__WEBPACK_IMPORTED_MODULE_8__["default"].MID;
+        this.state = _config_states__WEBPACK_IMPORTED_MODULE_7__["default"].MID;
         this.setup();
     }
     setup() {
         // Resize the application window
-        const size = _config_values__WEBPACK_IMPORTED_MODULE_7__.TILE_SIZE * 8;
+        const size = _config_values__WEBPACK_IMPORTED_MODULE_6__.TILE_SIZE * 8;
         this.app.renderer.resize(size, size);
-        this.app.renderer.backgroundColor = _config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].BEIGE;
+        this.app.renderer.backgroundColor = _config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].BEIGE;
         this.app.stage.addChild(this.graphics);
         // Setup the input system
         this.graphics.interactive = true;
         this.graphics.on('mousedown', (ev) => this.input.mousedown(ev));
         // Setup Pieces
-        this.setupPieces();
-        // this.setupEndgamePieces();
+        this.setupBoard('B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12');
         // Redraw
         this.draw();
-        if (!this.board.playerTurn) {
+        if (this.board.playerTurn) {
+            this.passToPlayer();
+        }
+        else {
             this.passToAi();
         }
     }
-    setupPieces() {
-        // Setup Pieces
-        let piece;
-        for (let i = 0; i < 12; i++) {
-            const x = i % 4 << 1;
-            const y = Math.floor(i / 4);
-            const pxAi = x + (y + 1 & 1);
-            const pyAi = y;
-            piece = new _piece__WEBPACK_IMPORTED_MODULE_2__["default"](pxAi, pyAi, false);
-            this.board.setCell(pxAi, pyAi, piece);
-            this.board.aiPieces.push(piece);
-            const pxPl = x + (y & 1);
-            const pyPl = 7 - y;
-            piece = new _piece__WEBPACK_IMPORTED_MODULE_2__["default"](pxPl, pyPl, true);
-            this.board.setCell(pxPl, pyPl, piece);
-            this.board.playerPieces.push(piece);
-        }
-    }
-    setupEndgamePieces() {
-        this.state = _config_states__WEBPACK_IMPORTED_MODULE_8__["default"].END;
-        let piece;
-        const pieceList = [
-            {
-                x: 0,
-                y: 1,
-                player: true,
-                king: false,
-            }, {
-                x: 1,
-                y: 2,
-                player: false,
-                king: false,
-            }
-        ];
-        for (const { x, y, player, king, } of pieceList) {
-            piece = new _piece__WEBPACK_IMPORTED_MODULE_2__["default"](x, y, player);
-            piece.king = king;
-            this.board.setCell(x, y, piece);
-            this.board.setKing(x, y, king);
-            if (player) {
-                this.board.playerPieces.push(piece);
-            }
-            else {
-                this.board.aiPieces.push(piece);
-            }
-        }
+    setupBoard(fen) {
+        this.board.setBoard(fen);
     }
     // Highlights
     resetHighlights() {
@@ -42774,7 +42782,7 @@ class Checkers {
         this.board.highlights.splice(0);
     }
     addHighlight(x, y) {
-        const highlight = new _highlight__WEBPACK_IMPORTED_MODULE_3__["default"](x, y);
+        const highlight = new _highlight__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
         this.board.highlights.push(highlight);
         this.board.setCell(x, y, highlight);
     }
@@ -42968,9 +42976,9 @@ class Checkers {
         this.board.capturePieces = this.getForceCaptures(this.board.playerTurn);
         this.promoted = false;
         // Change State
-        if (this.state === _config_states__WEBPACK_IMPORTED_MODULE_8__["default"].MID &&
+        if (this.state === _config_states__WEBPACK_IMPORTED_MODULE_7__["default"].MID &&
             (this.board.aiPieces.length + this.board.playerPieces.length < 8)) {
-            this.state = _config_states__WEBPACK_IMPORTED_MODULE_8__["default"].END;
+            this.state = _config_states__WEBPACK_IMPORTED_MODULE_7__["default"].END;
         }
     }
     passToAi() {
@@ -43112,42 +43120,42 @@ class Checkers {
         this.drawCapturePieces();
     }
     drawTiles() {
-        this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].BROWN);
+        this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].BROWN);
         for (let y = 0; y < 8; y++) {
             for (let x = y & 1 ^ 1; x < 8; x += 2) {
-                this.graphics.drawRect(x * _config_values__WEBPACK_IMPORTED_MODULE_7__.TILE_SIZE, y * _config_values__WEBPACK_IMPORTED_MODULE_7__.TILE_SIZE, _config_values__WEBPACK_IMPORTED_MODULE_7__.TILE_SIZE, _config_values__WEBPACK_IMPORTED_MODULE_7__.TILE_SIZE);
+                this.graphics.drawRect(x * _config_values__WEBPACK_IMPORTED_MODULE_6__.TILE_SIZE, y * _config_values__WEBPACK_IMPORTED_MODULE_6__.TILE_SIZE, _config_values__WEBPACK_IMPORTED_MODULE_6__.TILE_SIZE, _config_values__WEBPACK_IMPORTED_MODULE_6__.TILE_SIZE);
             }
         }
         this.graphics.endFill();
     }
     drawPieces() {
-        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_7__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].BLACK);
-        this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].WHITE);
+        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_6__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].BLACK);
+        this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].WHITE);
         for (const piece of this.board.playerPieces) {
             this.graphics.drawShape(piece);
             if (piece.king) {
-                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].RED);
+                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].RED);
                 // TODO: Add king texture
                 this.graphics.drawRect(piece.x - piece.radius / 2, piece.y - piece.radius / 2, piece.radius, piece.radius);
-                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].WHITE);
+                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].WHITE);
             }
         }
-        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_7__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].WHITE);
-        this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].BLACK);
+        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_6__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].WHITE);
+        this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].BLACK);
         for (const piece of this.board.aiPieces) {
             this.graphics.drawShape(piece);
             if (piece.king) {
-                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].RED);
+                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].RED);
                 // TODO: Add king texture
                 this.graphics.drawRect(piece.x - piece.radius / 2, piece.y - piece.radius / 2, piece.radius, piece.radius);
-                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].BLACK);
+                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].BLACK);
             }
         }
         this.graphics.lineStyle(0);
         this.graphics.endFill();
     }
     drawHighlights() {
-        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_7__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].WHITE);
+        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_6__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].WHITE);
         this.graphics.beginFill(undefined, 0);
         for (const highlight of this.board.highlights) {
             this.graphics.drawShape(highlight);
@@ -43158,7 +43166,7 @@ class Checkers {
     drawSelectedPiece() {
         if (!this.board.selectedPiece)
             return;
-        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_7__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].YELLOW);
+        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_6__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].YELLOW);
         this.graphics.beginFill(undefined, 0);
         this.graphics.drawShape(this.board.selectedPiece);
         this.graphics.lineStyle(0);
@@ -43167,7 +43175,7 @@ class Checkers {
     drawCapturePieces() {
         if (this.board.capturePieces.length < 1)
             return;
-        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_7__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].RED);
+        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_6__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].RED);
         this.graphics.beginFill(undefined, 0);
         for (const pieces of this.board.capturePieces) {
             this.graphics.drawShape(pieces);
@@ -43438,7 +43446,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 class Piece extends pixi_js__WEBPACK_IMPORTED_MODULE_0__.Circle {
-    constructor(x, y, player) {
+    constructor(x, y, player, king) {
         super(x * _config_values__WEBPACK_IMPORTED_MODULE_1__.TILE_SIZE + _config_values__WEBPACK_IMPORTED_MODULE_1__.HALF_TILE_SIZE, y * _config_values__WEBPACK_IMPORTED_MODULE_1__.TILE_SIZE + _config_values__WEBPACK_IMPORTED_MODULE_1__.HALF_TILE_SIZE, _config_values__WEBPACK_IMPORTED_MODULE_1__.PIECE_RADIUS);
         this.position = {
             x: 0,
@@ -43448,6 +43456,7 @@ class Piece extends pixi_js__WEBPACK_IMPORTED_MODULE_0__.Circle {
         this.position.x = x;
         this.position.y = y;
         this.player = player;
+        this.king = !!king;
     }
     setPosition(x, y) {
         this.x = x * _config_values__WEBPACK_IMPORTED_MODULE_1__.TILE_SIZE + _config_values__WEBPACK_IMPORTED_MODULE_1__.HALF_TILE_SIZE;

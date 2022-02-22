@@ -93,6 +93,69 @@ class Board {
     //   this.state.kings.toString(16).padStart(8, '0');
   }
 
+  // W - Ai
+  // B - Player
+  setBoard(fen: string) {
+    this.playerKings = 0;
+    this.aiKings = 0;
+    this.playerPieces = [];
+    this.aiPieces = [];
+    this.selectedPiece =  null;
+    this.highlights = [];
+    this.capturePieces = [];
+    this.tempCaptured = [];
+
+    const [
+      turn,
+      ais,
+      players
+    ] = fen.split(':');
+    this.playerTurn = turn === 'B';
+
+    let pos = 0, king = false;
+    for (const p of ais.slice(1).split(',')) {
+      if (p[0] === 'K') {
+        pos = +p.slice(1) - 1;
+        king = true;
+        this.aiKings++;
+      } else {
+        pos = +p - 1;
+        king = false;
+      }
+
+      const y = 7 - Math.floor(pos / 4);
+      const x = (3 - (pos % 4) << 1) + ((y + 1) & 1);
+      const piece = new Piece(x, y, false, king);
+      this.aiPieces.push(piece);
+
+      this.setCell(x, y, piece);
+      this.setKing(x, y, king);
+    }
+
+    for (const p of players.slice(1).split(',')) {
+      if (p[0] === 'K') {
+        pos = +p.slice(1) - 1;
+        king = true;
+        this.playerKings++;
+      } else {
+        pos = +p - 1;
+        king = false;
+      }
+
+      const y = 7 - Math.floor(pos / 4);
+      const x = (3 - (pos % 4) << 1) + ((y + 1) & 1);
+      const piece = new Piece(x, y, true, king);
+      this.playerPieces.push(piece);
+
+      this.setCell(x, y, piece);
+      this.setKing(x, y, king);
+    }
+  }
+
+  getBoard(): string {
+    return '';
+  }
+
   // Move Check
   isTopLeftEmpty(x: number, y: number): boolean {
     return x > 0 && y > 0 && !this.grid[x - 1][y - 1];

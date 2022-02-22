@@ -13,7 +13,7 @@ class Piece extends Circle {
   player: boolean;
   king = false;
 
-  constructor(x: number, y: number, player: boolean) {
+  constructor(x: number, y: number, player: boolean, king?: boolean) {
     super(
       x * TILE_SIZE + HALF_TILE_SIZE,
       y * TILE_SIZE + HALF_TILE_SIZE,
@@ -22,6 +22,7 @@ class Piece extends Circle {
     this.position.x = x;
     this.position.y = y;
     this.player = player;
+    this.king = !!king;
   }
 
   setPosition(x: number, y: number) {
