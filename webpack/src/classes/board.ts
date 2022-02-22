@@ -9,7 +9,18 @@ class Board {
     right: 0,
     kings: 0,
   };
-  private grid: GridState[][] = [];
+  grid: GridState[][] = [];
+
+  // playerTurn: boolean = Math.random() > 0.5;
+  playerTurn = true;
+  playerKings = 0;
+  aiKings = 0;
+  playerPieces: Piece[] = [];
+  aiPieces: Piece[] = [];
+  selectedPiece: Piece | null =  null;
+  highlights: Highlight[] = [];
+  capturePieces: Piece[] = [];
+  tempCaptured: Piece[] = [];
 
   constructor() {
     // Init Grid
@@ -53,9 +64,33 @@ class Board {
   }
 
   getState(): string {
-    return this.state.left.toString(16).padStart(8, '0') +
-      this.state.right.toString(16).padStart(8, '0') +
-      this.state.kings.toString(16).padStart(8, '0');
+    let state = '';
+    let cell: any;
+
+    for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < 8; x++) {
+        if ((y & 1) === (x & 1)) {
+          state += '*';
+        } else {
+          cell = this.getCell(x, y);
+          if (cell instanceof Piece) {
+            if (cell.player) {
+              state += cell.king ? 'P' : 'p';
+            } else {
+              state += cell.king ? 'A' : 'a';
+            }
+          } else {
+            state += '_';
+          }
+        }
+      }
+      state += '\n';
+    }
+
+    return state + '-' + (this.playerTurn ? 'P' : 'A');
+    // return this.state.left.toString(16).padStart(8, '0') +
+    //   this.state.right.toString(16).padStart(8, '0') +
+    //   this.state.kings.toString(16).padStart(8, '0');
   }
 
   // Move Check
@@ -381,6 +416,27 @@ class Board {
       this.isBottomLeftKingOpen(x, y, player) ||
       this.isBottomRightKingOpen(x, y, player)
     );
+  }
+
+  isPieceTrapped(x: number, y: number, player: boolean): boolean {
+    const left = x === 0;
+    const right = x === 7;
+
+    if (player) {
+      if (left)
+        return this.isTopRightPlayerPieceOpen(x, y);
+      if (right)
+        return this.isTopLeftPlayerPieceOpen(x,y);
+      return this.isTopLeftPlayerPieceOpen(x, y) || this.isTopRightPlayerPieceOpen(x, y);
+    } else {
+      if (left)
+        return this.isBottomLeftAiPieceOpen(x, y);
+      if (right)
+        return this.isBottomRightAiPieceOpen(x, y);
+      return this.isBottomLeftAiPieceOpen(x, y) || this.isBottomRightAiPieceOpen(x, y);
+    }
+
+    return false;
   }
 }
 

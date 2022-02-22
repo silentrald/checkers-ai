@@ -41737,18 +41737,26 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _heuristic__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./heuristic */ "./src/classes/heuristic.ts");
 /* harmony import */ var _config_values__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../config/values */ "./src/config/values.ts");
+/* harmony import */ var _config_states__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../config/states */ "./src/config/states.ts");
 
 
-class TreeNode {
-    constructor() {
-        this.children = [];
-        this.heuristic = 0;
-    }
-}
+
+const FLAGS = {
+    UPPERBOUND: 0,
+    LOWERBOUND: 1,
+    EXACT: 2,
+};
 class AI {
     constructor(checkers) {
         this.heuristicMemo = {};
         this.transpositionTable = {};
+        this.treeWalk = {};
+        this.mateMemo = {};
+        // TODO: Debug this
+        // 1. Get a state that is the longest to mate
+        // 2. Create a stack this will print the states,
+        // and check whether how many times the state gets visited
+        this.stack = []; // DEBUG
         this.checkers = checkers;
         this.board = checkers.board;
         this.heuristic = new _heuristic__WEBPACK_IMPORTED_MODULE_0__["default"](checkers);
@@ -41812,67 +41820,127 @@ class AI {
         }
         return output;
     }
-    getAllPossibleMoves() {
+    getAllPossibleMoves(player) {
         const rootMoves = [];
-        if (this.checkers.capturePieces.length > 0) {
-            for (const piece of this.checkers.capturePieces) {
-                const moves = this.getAllPossibleCaptureMoves(piece, []);
-                for (const m of moves) {
+        const capturePieces = this.checkers.getForceCaptures(player);
+        if (capturePieces.length > 0) {
+            for (const piece of capturePieces) {
+                const allMoves = this.getAllPossibleCaptureMoves(piece, []);
+                for (const moves of allMoves) {
                     rootMoves.push({
-                        moves: m,
-                        piece,
+                        moves: [...moves],
                         starting: Object.assign({}, piece.position),
+                        ending: moves[moves.length - 1],
                         capturing: true,
                     });
                 }
             }
         }
+        else if (player) {
+            for (const piece of this.board.playerPieces) {
+                const { x, y, } = piece.position;
+                if (piece.king) {
+                    if (this.board.isBottomLeftEmpty(x, y)) {
+                        const move = {
+                            x: x - 1,
+                            y: y + 1,
+                        };
+                        rootMoves.push({
+                            moves: [move],
+                            starting: Object.assign({}, piece.position),
+                            ending: move,
+                            capturing: false,
+                        });
+                    }
+                    if (this.board.isBottomRightEmpty(x, y)) {
+                        const move = {
+                            x: x + 1,
+                            y: y + 1,
+                        };
+                        rootMoves.push({
+                            moves: [move],
+                            starting: Object.assign({}, piece.position),
+                            ending: move,
+                            capturing: false,
+                        });
+                    }
+                }
+                if (this.board.isTopLeftEmpty(x, y)) {
+                    const move = {
+                        x: x - 1,
+                        y: y - 1,
+                    };
+                    rootMoves.push({
+                        moves: [move],
+                        starting: Object.assign({}, piece.position),
+                        ending: move,
+                        capturing: false,
+                    });
+                }
+                if (this.board.isTopRightEmpty(x, y)) {
+                    const move = {
+                        x: x + 1,
+                        y: y - 1,
+                    };
+                    rootMoves.push({
+                        moves: [move],
+                        starting: Object.assign({}, piece.position),
+                        ending: move,
+                        capturing: false,
+                    });
+                }
+            }
+        }
         else {
-            for (const piece of this.checkers.aiPieces) {
+            for (const piece of this.board.aiPieces) {
                 const { x, y, } = piece.position;
                 if (piece.king) {
                     if (this.board.isTopLeftEmpty(x, y)) {
+                        const move = {
+                            x: x - 1,
+                            y: y - 1,
+                        };
                         rootMoves.push({
-                            piece,
-                            moves: [{
-                                    x: x - 1,
-                                    y: y - 1,
-                                }],
+                            moves: [move],
                             starting: Object.assign({}, piece.position),
+                            ending: move,
                             capturing: false,
                         });
                     }
                     if (this.board.isTopRightEmpty(x, y)) {
+                        const move = {
+                            x: x + 1,
+                            y: y - 1,
+                        };
                         rootMoves.push({
-                            piece,
-                            moves: [{
-                                    x: x + 1,
-                                    y: y - 1,
-                                }],
+                            moves: [move],
                             starting: Object.assign({}, piece.position),
+                            ending: move,
                             capturing: false,
                         });
                     }
                 }
                 if (this.board.isBottomLeftEmpty(x, y)) {
+                    const move = {
+                        x: x - 1,
+                        y: y + 1,
+                    };
                     rootMoves.push({
-                        piece,
-                        moves: [{
-                                x: x - 1,
-                                y: y + 1,
-                            }],
+                        moves: [move],
                         starting: Object.assign({}, piece.position),
+                        ending: move,
                         capturing: false,
                     });
                 }
                 if (this.board.isBottomRightEmpty(x, y)) {
+                    const move = {
+                        x: x + 1,
+                        y: y + 1,
+                    };
                     rootMoves.push({
-                        moves: [{
-                                x: x + 1,
-                                y: y + 1,
-                            }],
-                        piece,
+                        moves: [move],
                         starting: Object.assign({}, piece.position),
+                        ending: move,
                         capturing: false,
                     });
                 }
@@ -41881,7 +41949,8 @@ class AI {
         return rootMoves;
     }
     _move(move) {
-        const { piece, moves, capturing, } = move;
+        const { starting, moves, capturing, } = move;
+        const piece = this.board.getCell(starting.x, starting.y);
         if (capturing) {
             for (const { x, y, } of moves)
                 this.checkers.capturePiece(piece, x, y);
@@ -41890,9 +41959,15 @@ class AI {
             for (const { x, y, } of moves)
                 this.checkers.movePiece(piece, x, y);
         }
+        this.board.playerTurn = !this.board.playerTurn;
+        move.promoted = this.checkers.promoted;
+        this.checkers.promoted = false;
     }
     _reverseMove(move) {
-        const { piece, moves, starting, capturing, } = move;
+        const { moves, starting, ending, capturing, } = move;
+        const piece = this.board.getCell(ending.x, ending.y);
+        this.checkers.promoted = !!move.promoted;
+        this.board.playerTurn = !this.board.playerTurn;
         const temp = moves.pop(); // Remove last move
         moves.reverse();
         if (capturing) {
@@ -41908,236 +41983,291 @@ class AI {
         moves.reverse();
         moves.push(temp); // Push it back the moves list
     }
-    _branch(parent, move, depth, playerTurn) {
-        this._move(move);
-        const state = this.board.getState();
-        let child = this.transpositionTable[state];
-        if (!child) {
-            child = new TreeNode();
-            const promoted = this.checkers.promoted;
-            this.checkers.promoted = false;
-            this.branchSearchTree(child, depth - 1, !playerTurn);
-            this.checkers.promoted = promoted;
-            this.transpositionTable[state] = child;
-        }
-        parent.children.push(child);
-        this._reverseMove(move);
-    }
-    _setLeafNode(parent, draw = false) {
-        const state = this.board.getState();
-        let heuristic = this.heuristicMemo[state];
-        if (heuristic === undefined) {
-            heuristic = draw ?
-                -this.heuristic.winFactor : // Draw Hueristic
-                this.heuristic.getHeuristic();
-            this.heuristicMemo[state] = heuristic;
-        }
-        parent.heuristic = heuristic;
-    }
-    branchSearchTree(parent, depth, playerTurn) {
-        // Check if you can branch out
-        const capturePieces = this.checkers.getForceCaptures(playerTurn);
+    quesceneSearch(alpha, beta, player) {
+        if (this.board.playerPieces.length === 0)
+            return 2000;
+        if (this.board.aiPieces.length === 0)
+            return -2000;
+        const capturePieces = this.checkers.getForceCaptures(player);
         const capturing = capturePieces.length > 0;
-        if (capturing) {
-            if (!this.checkers.hasCaptures(capturePieces, playerTurn)) {
-                this._setLeafNode(parent, true);
-                return;
-            }
+        if (!capturing) {
+            const heuristic = this.heuristic.getHeuristic();
+            const state = this.board.getState();
+            this.heuristicMemo[state] = heuristic;
+            return heuristic;
+        }
+        let val = 0;
+        if (player) { // Player
+            val = Infinity;
             for (const piece of capturePieces) {
                 const captureMoves = this.getAllPossibleCaptureMoves(piece, []);
                 for (const moves of captureMoves) {
                     const move = {
-                        piece,
-                        moves,
+                        moves: [...moves],
                         starting: Object.assign({}, piece.position),
+                        ending: moves[moves.length - 1],
                         capturing: true,
                     };
-                    this._branch(parent, move, depth, playerTurn);
-                }
-            }
-            if (parent.children.length === 0)
-                this._setLeafNode(parent);
-            return;
-        }
-        if (!this.checkers.hasMoves(playerTurn)) {
-            this._setLeafNode(parent, true);
-            return;
-        }
-        if (depth < 1) {
-            this._setLeafNode(parent);
-            return;
-        }
-        if (playerTurn) {
-            for (const piece of this.checkers.playerPieces) {
-                const { x, y, } = piece.position;
-                if (piece.king) {
-                    if (this.board.isBottomLeftEmpty(x, y)) {
-                        const move = {
-                            piece,
-                            moves: [{
-                                    x: x - 1,
-                                    y: y + 1,
-                                }],
-                            starting: Object.assign({}, piece.position),
-                            capturing: false,
-                        };
-                        this._branch(parent, move, depth, playerTurn);
-                    }
-                    if (this.board.isBottomRightEmpty(x, y)) {
-                        const move = {
-                            piece,
-                            moves: [{
-                                    x: x + 1,
-                                    y: y + 1,
-                                }],
-                            starting: Object.assign({}, piece.position),
-                            capturing: false,
-                        };
-                        this._branch(parent, move, depth, playerTurn);
-                    }
-                }
-                if (this.board.isTopLeftEmpty(x, y)) {
-                    const move = {
-                        piece,
-                        moves: [{
-                                x: x - 1,
-                                y: y - 1,
-                            }],
-                        starting: Object.assign({}, piece.position),
-                        capturing: false,
-                    };
-                    this._branch(parent, move, depth, playerTurn);
-                }
-                if (this.board.isTopRightEmpty(x, y)) {
-                    const move = {
-                        piece,
-                        moves: [{
-                                x: x + 1,
-                                y: y - 1,
-                            }],
-                        starting: Object.assign({}, piece.position),
-                        capturing: false,
-                    };
-                    this._branch(parent, move, depth, playerTurn);
+                    this._move(move);
+                    val = Math.min(val, this.quesceneSearch(alpha, beta, false));
+                    this._reverseMove(move);
+                    if (val <= alpha)
+                        return val;
+                    beta = Math.min(beta, val);
                 }
             }
         }
-        else {
-            for (const piece of this.checkers.aiPieces) {
-                const { x, y, } = piece.position;
-                if (piece.king) {
-                    if (this.board.isTopLeftEmpty(x, y)) {
-                        const move = {
-                            piece,
-                            moves: [{
-                                    x: x - 1,
-                                    y: y - 1,
-                                }],
-                            starting: Object.assign({}, piece.position),
-                            capturing: false,
-                        };
-                        this._branch(parent, move, depth, playerTurn);
-                    }
-                    if (this.board.isTopRightEmpty(x, y)) {
-                        const move = {
-                            piece,
-                            moves: [{
-                                    x: x + 1,
-                                    y: y - 1,
-                                }],
-                            starting: Object.assign({}, piece.position),
-                            capturing: false,
-                        };
-                        this._branch(parent, move, depth, playerTurn);
-                    }
-                }
-                if (this.board.isBottomLeftEmpty(x, y)) {
-                    const move = {
-                        piece,
-                        moves: [{
-                                x: x - 1,
-                                y: y + 1,
-                            }],
-                        starting: Object.assign({}, piece.position),
-                        capturing: false,
-                    };
-                    this._branch(parent, move, depth, playerTurn);
-                }
-                if (this.board.isBottomRightEmpty(x, y)) {
-                    const move = {
-                        piece,
-                        moves: [{
-                                x: x + 1,
-                                y: y + 1,
-                            }],
-                        starting: Object.assign({}, piece.position),
-                        capturing: false,
-                    };
-                    this._branch(parent, move, depth, playerTurn);
-                }
-            }
-        }
-        if (parent.children.length === 0)
-            this._setLeafNode(parent);
-    }
-    minimax(parent, alpha, beta, maxPlayer) {
-        if (parent.children.length === 0) {
-            return parent.heuristic;
-        }
-        // AI
-        let val = 0;
-        if (maxPlayer) {
+        else { // AI
             val = -Infinity;
-            for (const child of parent.children) {
-                val = Math.max(val, this.minimax(child, alpha, beta, false));
-                if (val >= beta)
-                    break;
-                alpha = Math.max(alpha, val);
-            }
-        }
-        else { // Player
-            val = Infinity;
-            for (const child of parent.children) {
-                val = Math.min(val, this.minimax(child, alpha, beta, true));
-                if (val <= alpha)
-                    break;
-                beta = Math.max(beta, val);
+            for (const piece of capturePieces) {
+                const captureMoves = this.getAllPossibleCaptureMoves(piece, []);
+                for (const moves of captureMoves) {
+                    const move = {
+                        moves: [...moves],
+                        starting: Object.assign({}, piece.position),
+                        ending: moves[moves.length - 1],
+                        capturing: true,
+                    };
+                    this._move(move);
+                    val = Math.max(val, this.quesceneSearch(alpha, beta, true));
+                    this._reverseMove(move);
+                    if (val >= beta)
+                        return val;
+                    alpha = Math.max(alpha, val);
+                }
             }
         }
         return val;
     }
+    negamax(depth, alpha, beta, color) {
+        const player = color < 0;
+        const state = this.board.getState();
+        const originalAlpha = alpha;
+        // Transposition Table
+        let entry = this.transpositionTable[state];
+        if (entry && entry.depth >= depth) {
+            if (entry.flag === FLAGS.EXACT)
+                return entry.value;
+            else if (entry.flag === FLAGS.LOWERBOUND)
+                alpha = Math.max(alpha, entry.value);
+            else
+                beta = Math.min(beta, entry.value);
+            if (alpha >= beta)
+                return entry.value;
+        }
+        if (this.board.playerPieces.length === 0)
+            return 2000 * color;
+        if (this.board.aiPieces.length === 0)
+            return -2000 * color;
+        if (depth < 1)
+            return this.quesceneSearch(alpha, beta, player) * color;
+        let max = -2000;
+        const allMoves = this.getAllPossibleMoves(player);
+        allMoves.sort((a, b) => a.moves.length - b.moves.length);
+        // Prioritize moves to the center of the board
+        // allMoves.sort((m1, m2) =>
+        //   Math.abs(m1.ending.x - 3.5) + Math.abs(m1.ending.y - 3.5) -
+        //   Math.abs(m2.ending.x - 3.5) - Math.abs(m2.ending.y - 3.5)
+        // );
+        this.treeWalk[state] = true;
+        for (const moves of allMoves) {
+            this._move(moves);
+            max = Math.max(max, -this.negamax(depth - 1, -beta, -alpha, -color));
+            this._reverseMove(moves);
+            alpha = Math.max(alpha, max);
+            if (alpha >= beta)
+                break;
+        }
+        this.treeWalk[state] = false;
+        let flag = FLAGS.EXACT;
+        if (max <= originalAlpha)
+            flag = FLAGS.UPPERBOUND;
+        else if (max >= beta)
+            flag = FLAGS.LOWERBOUND;
+        entry = {
+            value: max,
+            depth,
+            flag,
+        };
+        this.transpositionTable[state] = entry;
+        return max;
+    }
+    minimax(depth, alpha, beta, player) {
+        if (player)
+            return -this.negamax(depth, -beta, -alpha, -1);
+        else
+            return this.negamax(depth, alpha, beta, 1);
+    }
+    mateSearch(move, depth, player) {
+        const state = this.board.getState();
+        const cache = this.mateMemo[state];
+        if (cache && cache.depth >= depth) {
+            const node = Object.assign({}, cache.node);
+            node.move = move;
+            return node;
+        }
+        const node = {
+            children: [],
+            move,
+            count: Infinity,
+            mate: false,
+            state,
+        };
+        if (this.treeWalk[state]) {
+            node.count = _config_values__WEBPACK_IMPORTED_MODULE_1__.MAX_DEPTH_END;
+            node.mate = true;
+            return node;
+        }
+        if (this.board.playerPieces.length === 0) {
+            node.count = 0;
+            node.mate = true;
+            this.mateMemo[state] = {
+                node,
+                depth,
+            };
+            return node;
+        }
+        if (this.board.aiPieces.length === 0) {
+            this.mateMemo[state] = {
+                node,
+                depth,
+            };
+            return node;
+        }
+        if (depth < 1) {
+            const mate = this.quesceneSearch(-Infinity, Infinity, player) > 999;
+            node.count = mate ? 0 : _config_values__WEBPACK_IMPORTED_MODULE_1__.MAX_DEPTH_END;
+            node.mate = true;
+            return node;
+        }
+        const allMoves = this.getAllPossibleMoves(player);
+        if (allMoves.length === 0) {
+            this.mateMemo[state] = {
+                node,
+                depth,
+            };
+            return node;
+        }
+        this.treeWalk[state] = false;
+        this.stack.push(state);
+        if (player) {
+            // All should be a mate threat
+            let max = -Infinity;
+            node.mate = true;
+            for (const newMove of allMoves) {
+                this._move(newMove);
+                const child = this.mateSearch(Object.assign({}, newMove), depth - 1, false);
+                this._reverseMove(newMove);
+                if (!child.mate) {
+                    max = Infinity;
+                    node.children = [];
+                    node.mate = false;
+                    break;
+                }
+                max = Math.max(max, child.count);
+                node.children.push(child);
+            }
+            node.count = max;
+        }
+        else {
+            // At least 1 mate threat
+            let min = Infinity;
+            for (const newMove of allMoves) {
+                this._move(newMove);
+                const child = this.mateSearch(Object.assign({}, newMove), depth - 1, true);
+                if (child.mate) {
+                    if (child.count < min) {
+                        min = child.count;
+                        node.count = min;
+                        node.children = [Object.assign({}, child)];
+                    }
+                    node.mate = true;
+                }
+                this._reverseMove(newMove);
+            }
+            node.count++;
+        }
+        this.mateMemo[state] = {
+            node,
+            depth,
+        };
+        this.treeWalk[state] = false;
+        return node;
+    }
     move() {
+        if (this.matingTree) {
+            const state = this.board.getState();
+            const matingTree = this.matingTree.children.find((mt) => mt.state === state);
+            this.matingTree = matingTree.children[0];
+            if (this.matingTree) {
+                this._move(this.matingTree.move);
+                this.board.tempCaptured.splice(0);
+                return;
+            }
+        }
+        let depth = 0;
+        switch (this.checkers.state) {
+            case _config_states__WEBPACK_IMPORTED_MODULE_2__["default"].START:
+            case _config_states__WEBPACK_IMPORTED_MODULE_2__["default"].MID:
+                depth = _config_values__WEBPACK_IMPORTED_MODULE_1__.MAX_DEPTH_MID;
+                break;
+            case _config_states__WEBPACK_IMPORTED_MODULE_2__["default"].END:
+                depth = Math.min(_config_values__WEBPACK_IMPORTED_MODULE_1__.MAX_DEPTH_MID, _config_values__WEBPACK_IMPORTED_MODULE_1__.MAX_DEPTH_END - this.board.aiPieces.length - this.board.playerPieces.length);
+                break;
+        }
         // Check for moves
-        const rootMoves = this.getAllPossibleMoves();
+        const rootMoves = this.getAllPossibleMoves(false);
         if (rootMoves.length === 1) {
             this._move(rootMoves[0]);
-            this.checkers.tempCaptured.splice(0);
+            this.board.tempCaptured.splice(0);
             return;
         }
         // Minimax for rootMoves
         let bestMove = rootMoves[0];
         let heuristic = 0;
         let max = -Infinity;
-        for (const moves of rootMoves) {
-            this._move(moves);
-            const promoted = this.checkers.promoted;
-            this.checkers.promoted = false;
-            const root = new TreeNode();
-            this.branchSearchTree(root, _config_values__WEBPACK_IMPORTED_MODULE_1__.MAX_DEPTH, true);
-            heuristic = this.minimax(root, -Infinity, Infinity, false);
+        for (const move of rootMoves) {
+            this._move(move);
+            heuristic = this.minimax(depth, -Infinity, Infinity, true);
+            // console.log(heuristic, move);
             if (heuristic > max) {
                 max = heuristic;
-                bestMove = moves;
+                bestMove = move;
             }
-            this.checkers.promoted = promoted;
-            this._reverseMove(moves);
+            this._reverseMove(move);
+            if (heuristic > 999) {
+                break;
+            }
+        }
+        if (heuristic > 999) {
+            rootMoves.splice(0, rootMoves.indexOf(bestMove) + 1);
+            this._move(bestMove);
+            this.matingTree = this.mateSearch(bestMove, depth, true);
+            this._reverseMove(bestMove);
+            // Mate search
+            let matingTree;
+            for (const move of rootMoves) {
+                this._move(move);
+                heuristic = this.minimax(depth, -Infinity, Infinity, true);
+                if (heuristic < 1000) {
+                    this._reverseMove(move);
+                    continue;
+                }
+                matingTree = this.mateSearch(move, depth, true);
+                this._reverseMove(move);
+                if (matingTree.count < this.matingTree.count) {
+                    this.matingTree = matingTree;
+                    bestMove = move;
+                }
+            }
+            // console.log(this.matingTree.state);
+            // console.log(bestMove);
+            // console.log(this.matingTree);
         }
         this._move(bestMove);
-        this.checkers.tempCaptured.splice(0);
+        this.board.tempCaptured.splice(0);
         this.transpositionTable = {};
-        // console.log(this.heuristicMemo);
-        // console.log('Best Move Eval', max);
-        // console.log('Current Eval', this.heuristic.getHeuristic());
+        this.heuristicMemo = {};
     }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (AI);
@@ -42168,6 +42298,16 @@ class Board {
             kings: 0,
         };
         this.grid = [];
+        // playerTurn: boolean = Math.random() > 0.5;
+        this.playerTurn = true;
+        this.playerKings = 0;
+        this.aiKings = 0;
+        this.playerPieces = [];
+        this.aiPieces = [];
+        this.selectedPiece = null;
+        this.highlights = [];
+        this.capturePieces = [];
+        this.tempCaptured = [];
         // Init Grid
         for (let r = 0; r < 8; r++) {
             this.grid.push([]);
@@ -42204,9 +42344,34 @@ class Board {
         this.state.kings = (this.state.kings & ~(0x1 << offset) | (+king << offset)) >>> 0;
     }
     getState() {
-        return this.state.left.toString(16).padStart(8, '0') +
-            this.state.right.toString(16).padStart(8, '0') +
-            this.state.kings.toString(16).padStart(8, '0');
+        let state = '';
+        let cell;
+        for (let y = 0; y < 8; y++) {
+            for (let x = 0; x < 8; x++) {
+                if ((y & 1) === (x & 1)) {
+                    state += '*';
+                }
+                else {
+                    cell = this.getCell(x, y);
+                    if (cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"]) {
+                        if (cell.player) {
+                            state += cell.king ? 'P' : 'p';
+                        }
+                        else {
+                            state += cell.king ? 'A' : 'a';
+                        }
+                    }
+                    else {
+                        state += '_';
+                    }
+                }
+            }
+            state += '\n';
+        }
+        return state + '-' + (this.playerTurn ? 'P' : 'A');
+        // return this.state.left.toString(16).padStart(8, '0') +
+        //   this.state.right.toString(16).padStart(8, '0') +
+        //   this.state.kings.toString(16).padStart(8, '0');
     }
     // Move Check
     isTopLeftEmpty(x, y) {
@@ -42468,6 +42633,25 @@ class Board {
             this.isBottomLeftKingOpen(x, y, player) ||
             this.isBottomRightKingOpen(x, y, player));
     }
+    isPieceTrapped(x, y, player) {
+        const left = x === 0;
+        const right = x === 7;
+        if (player) {
+            if (left)
+                return this.isTopRightPlayerPieceOpen(x, y);
+            if (right)
+                return this.isTopLeftPlayerPieceOpen(x, y);
+            return this.isTopLeftPlayerPieceOpen(x, y) || this.isTopRightPlayerPieceOpen(x, y);
+        }
+        else {
+            if (left)
+                return this.isBottomLeftAiPieceOpen(x, y);
+            if (right)
+                return this.isBottomRightAiPieceOpen(x, y);
+            return this.isBottomLeftAiPieceOpen(x, y) || this.isBottomRightAiPieceOpen(x, y);
+        }
+        return false;
+    }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Board);
 
@@ -42493,6 +42677,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _ai__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./ai */ "./src/classes/ai.ts");
 /* harmony import */ var _config_colors__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../config/colors */ "./src/config/colors.ts");
 /* harmony import */ var _config_values__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../config/values */ "./src/config/values.ts");
+/* harmony import */ var _config_states__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../config/states */ "./src/config/states.ts");
+
 
 
 
@@ -42507,21 +42693,11 @@ class Checkers {
         this.graphics = new pixi_js__WEBPACK_IMPORTED_MODULE_0__.Graphics();
         this.board = new _board__WEBPACK_IMPORTED_MODULE_1__["default"]();
         this.input = new _input__WEBPACK_IMPORTED_MODULE_4__["default"](this);
-        // playerTurn: boolean = Math.random() > 0.5;
-        this.playerTurn = true;
-        // playerTurn = false;
+        this.ai = new _ai__WEBPACK_IMPORTED_MODULE_5__["default"](this);
         this.inputting = true;
-        this.playerPieces = [];
-        this.aiPieces = [];
-        this.playerKings = 0;
-        this.aiKings = 0;
-        this.selectedPiece = null;
-        this.highlights = [];
-        this.capturePieces = [];
-        this.tempCaptured = [];
         this.capturing = false;
         this.promoted = false;
-        this.ai = new _ai__WEBPACK_IMPORTED_MODULE_5__["default"](this);
+        this.state = _config_states__WEBPACK_IMPORTED_MODULE_8__["default"].MID;
         this.setup();
     }
     setup() {
@@ -42534,6 +42710,16 @@ class Checkers {
         this.graphics.interactive = true;
         this.graphics.on('mousedown', (ev) => this.input.mousedown(ev));
         // Setup Pieces
+        this.setupPieces();
+        // this.setupEndgamePieces();
+        // Redraw
+        this.draw();
+        if (!this.board.playerTurn) {
+            this.passToAi();
+        }
+    }
+    setupPieces() {
+        // Setup Pieces
         let piece;
         for (let i = 0; i < 12; i++) {
             const x = i % 4 << 1;
@@ -42542,40 +42728,64 @@ class Checkers {
             const pyAi = y;
             piece = new _piece__WEBPACK_IMPORTED_MODULE_2__["default"](pxAi, pyAi, false);
             this.board.setCell(pxAi, pyAi, piece);
-            this.aiPieces.push(piece);
+            this.board.aiPieces.push(piece);
             const pxPl = x + (y & 1);
             const pyPl = 7 - y;
             piece = new _piece__WEBPACK_IMPORTED_MODULE_2__["default"](pxPl, pyPl, true);
             this.board.setCell(pxPl, pyPl, piece);
-            this.playerPieces.push(piece);
+            this.board.playerPieces.push(piece);
         }
-        // Redraw
-        this.draw();
-        if (!this.playerTurn) {
-            this.passToAi();
+    }
+    setupEndgamePieces() {
+        this.state = _config_states__WEBPACK_IMPORTED_MODULE_8__["default"].END;
+        let piece;
+        const pieceList = [
+            {
+                x: 0,
+                y: 1,
+                player: true,
+                king: false,
+            }, {
+                x: 1,
+                y: 2,
+                player: false,
+                king: false,
+            }
+        ];
+        for (const { x, y, player, king, } of pieceList) {
+            piece = new _piece__WEBPACK_IMPORTED_MODULE_2__["default"](x, y, player);
+            piece.king = king;
+            this.board.setCell(x, y, piece);
+            this.board.setKing(x, y, king);
+            if (player) {
+                this.board.playerPieces.push(piece);
+            }
+            else {
+                this.board.aiPieces.push(piece);
+            }
         }
     }
     // Highlights
     resetHighlights() {
-        for (const highlight of this.highlights) {
+        for (const highlight of this.board.highlights) {
             const { x, y, } = highlight.position;
             this.board.setCell(x, y, null);
         }
-        this.highlights.splice(0);
+        this.board.highlights.splice(0);
     }
     addHighlight(x, y) {
         const highlight = new _highlight__WEBPACK_IMPORTED_MODULE_3__["default"](x, y);
-        this.highlights.push(highlight);
+        this.board.highlights.push(highlight);
         this.board.setCell(x, y, highlight);
     }
     highlightPlayerMoves(piece) {
         if (!piece.player)
             return;
         const { x, y, } = piece.position;
-        this.selectedPiece = piece;
+        this.board.selectedPiece = piece;
         this.resetHighlights();
         // Mandatory Jumps
-        if (this.capturePieces.length > 0) {
+        if (this.board.capturePieces.length > 0) {
             if (piece.king) {
                 if (this.board.isBottomLeftCapturable(x, y, false))
                     this.addHighlight(x - 2, y + 2);
@@ -42618,15 +42828,15 @@ class Checkers {
     handlePlayerMove(x, y) {
         this.inputting = false; // block inputs
         this.resetHighlights();
-        const piece = this.selectedPiece;
-        if (this.capturing || this.capturePieces.length > 0) {
+        const piece = this.board.selectedPiece;
+        if (this.capturing || this.board.capturePieces.length > 0) {
             this.capturePiece(piece, x, y);
-            this.tempCaptured.splice(0);
-            this.capturePieces.splice(0);
+            this.board.tempCaptured.splice(0);
+            this.board.capturePieces.splice(0);
             if (!this.promoted) {
                 // Check if the current piece can still capture
                 this.highlightAdditionalCaptures(piece);
-                if (this.highlights.length > 0) {
+                if (this.board.highlights.length > 0) {
                     this.capturing = true;
                     this.inputting = true;
                     this.draw();
@@ -42639,9 +42849,8 @@ class Checkers {
         else {
             this.movePiece(piece, x, y);
         }
-        this.playerTurn = !this.playerTurn;
-        this.selectedPiece = null;
-        this.inputting = true;
+        this.board.playerTurn = !this.board.playerTurn;
+        this.board.selectedPiece = null;
         this.draw();
         this.passToAi();
     }
@@ -42654,7 +42863,7 @@ class Checkers {
                 if (y === 0) {
                     piece.king = true;
                     this.promoted = true;
-                    this.playerKings++;
+                    this.board.playerKings++;
                     this.board.setKing(x, y, true);
                 }
             }
@@ -42662,7 +42871,7 @@ class Checkers {
                 if (y === 7) {
                     piece.king = true;
                     this.promoted = true;
-                    this.aiKings++;
+                    this.board.aiKings++;
                     this.board.setKing(x, y, true);
                 }
             }
@@ -42675,10 +42884,10 @@ class Checkers {
             piece.king = false;
             this.board.setKing(x, y, false);
             if (piece.player) {
-                this.playerKings--;
+                this.board.playerKings--;
             }
             else {
-                this.aiKings--;
+                this.board.aiKings--;
             }
         }
     }
@@ -42710,20 +42919,20 @@ class Checkers {
         const capY = Math.abs(pos.y + y) >> 1;
         const captured = this.board.getCell(capX, capY);
         this.board.setCell(capX, capY, null);
-        this.tempCaptured.push(captured);
+        this.board.tempCaptured.push(captured);
         // Move the piece
         this._movePiece(piece, x, y);
         if (captured.player) {
-            this.playerPieces.splice(this.playerPieces.indexOf(captured), 1);
+            this.board.playerPieces.splice(this.board.playerPieces.indexOf(captured), 1);
             if (captured.king) {
-                this.playerKings--;
+                this.board.playerKings--;
                 this.board.setKing(capX, capY, false);
             }
         }
         else {
-            this.aiPieces.splice(this.aiPieces.indexOf(captured), 1);
+            this.board.aiPieces.splice(this.board.aiPieces.indexOf(captured), 1);
             if (captured.king) {
-                this.aiKings--;
+                this.board.aiKings--;
                 this.board.setKing(capX, capY, false);
             }
         }
@@ -42734,31 +42943,35 @@ class Checkers {
         // Move the piece
         this._movePiece(piece, x, y);
         // Get the captured piece and put it back
-        const captured = this.tempCaptured.pop();
+        const captured = this.board.tempCaptured.pop();
         const capX = captured.position.x;
         const capY = captured.position.y;
         this.board.setCell(capX, capY, captured);
         if (captured.player) {
-            this.playerPieces.push(captured);
+            this.board.playerPieces.push(captured);
             if (captured.king) {
-                this.playerKings++;
+                this.board.playerKings++;
                 this.board.setKing(capX, capY, true);
             }
         }
         else {
-            this.aiPieces.push(captured);
+            this.board.aiPieces.push(captured);
             if (captured.king) {
-                this.aiKings++;
+                this.board.aiKings++;
                 this.board.setKing(capX, capY, true);
             }
         }
     }
     // Turns
     setupTurn() {
-        this.capturePieces.splice(0);
-        this.capturePieces = this.getForceCaptures(this.playerTurn);
+        this.board.capturePieces.splice(0);
+        this.board.capturePieces = this.getForceCaptures(this.board.playerTurn);
         this.promoted = false;
-        // console.log('State', this.board.getState());
+        // Change State
+        if (this.state === _config_states__WEBPACK_IMPORTED_MODULE_8__["default"].MID &&
+            (this.board.aiPieces.length + this.board.playerPieces.length < 8)) {
+            this.state = _config_states__WEBPACK_IMPORTED_MODULE_8__["default"].END;
+        }
     }
     passToAi() {
         this.setupTurn();
@@ -42768,7 +42981,7 @@ class Checkers {
         }
         console.log('Ai Turn');
         this.ai.move();
-        this.playerTurn = true;
+        this.board.playerTurn = true;
         this.passToPlayer();
     }
     passToPlayer() {
@@ -42778,11 +42991,12 @@ class Checkers {
             return;
         }
         console.log('Player Turn');
+        this.inputting = true;
         this.draw();
     }
     hasMoves(playerTurn) {
         if (playerTurn) {
-            for (const piece of this.playerPieces) {
+            for (const piece of this.board.playerPieces) {
                 const { x, y, } = piece.position;
                 if (this.board.isTopLeftEmpty(x, y))
                     return true;
@@ -42797,7 +43011,7 @@ class Checkers {
             }
         }
         else {
-            for (const piece of this.aiPieces) {
+            for (const piece of this.board.aiPieces) {
                 const { x, y, } = piece.position;
                 if (this.board.isBottomLeftEmpty(x, y))
                     return true;
@@ -42813,44 +43027,10 @@ class Checkers {
         }
         return false;
     }
-    hasCaptures(capturePieces, playerTurn) {
-        if (playerTurn) {
-            for (const piece of capturePieces) {
-                const { x, y, } = piece.position;
-                if (this.board.isTopLeftCapturable(x, y, false))
-                    return true;
-                if (this.board.isTopRightCapturable(x, y, false))
-                    return true;
-                if (piece.king) {
-                    if (this.board.isBottomLeftCapturable(x, y, false))
-                        return true;
-                    if (this.board.isBottomRightCapturable(x, y, false))
-                        return true;
-                }
-            }
-        }
-        else {
-            for (const piece of capturePieces) {
-                const { x, y, } = piece.position;
-                if (this.board.isBottomLeftCapturable(x, y, true))
-                    return true;
-                if (this.board.isBottomRightCapturable(x, y, true))
-                    return true;
-                if (piece.king) {
-                    if (this.board.isTopLeftCapturable(x, y, true))
-                        return true;
-                    if (this.board.isTopRightCapturable(x, y, true))
-                        return true;
-                }
-            }
-        }
-        return false;
-    }
     hasAvailableMoves(playerTurn) {
-        const capturing = this.capturePieces.length > 0;
+        const capturing = this.board.capturePieces.length > 0;
         if (capturing) {
-            if (this.hasCaptures(this.capturePieces, playerTurn))
-                return true;
+            return true;
         }
         else {
             if (this.hasMoves(playerTurn))
@@ -42859,11 +43039,11 @@ class Checkers {
         return false;
     }
     gameOver(playerTurn) {
-        if (this.playerPieces.length === 0) {
+        if (this.board.playerPieces.length === 0) {
             alert('You Lose');
             return true;
         }
-        if (this.aiPieces.length === 0) {
+        if (this.board.aiPieces.length === 0) {
             alert('You Win');
             return true;
         }
@@ -42873,10 +43053,10 @@ class Checkers {
         }
         return false;
     }
-    getForceCaptures(playerTurn) {
+    getForceCaptures(player) {
         const capturePieces = [];
-        if (playerTurn) {
-            for (const piece of this.playerPieces) {
+        if (player) {
+            for (const piece of this.board.playerPieces) {
                 const { x, y, } = piece.position;
                 if (this.board.isTopLeftCapturable(x, y, false)) {
                     capturePieces.push(piece);
@@ -42899,7 +43079,7 @@ class Checkers {
             }
         }
         else {
-            for (const piece of this.aiPieces) {
+            for (const piece of this.board.aiPieces) {
                 const { x, y, } = piece.position;
                 if (this.board.isBottomLeftCapturable(x, y, true)) {
                     capturePieces.push(piece);
@@ -42943,7 +43123,7 @@ class Checkers {
     drawPieces() {
         this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_7__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].BLACK);
         this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].WHITE);
-        for (const piece of this.playerPieces) {
+        for (const piece of this.board.playerPieces) {
             this.graphics.drawShape(piece);
             if (piece.king) {
                 this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].RED);
@@ -42954,7 +43134,7 @@ class Checkers {
         }
         this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_7__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].WHITE);
         this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].BLACK);
-        for (const piece of this.aiPieces) {
+        for (const piece of this.board.aiPieces) {
             this.graphics.drawShape(piece);
             if (piece.king) {
                 this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].RED);
@@ -42969,27 +43149,27 @@ class Checkers {
     drawHighlights() {
         this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_7__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].WHITE);
         this.graphics.beginFill(undefined, 0);
-        for (const highlight of this.highlights) {
+        for (const highlight of this.board.highlights) {
             this.graphics.drawShape(highlight);
         }
         this.graphics.lineStyle(0);
         this.graphics.endFill();
     }
     drawSelectedPiece() {
-        if (!this.selectedPiece)
+        if (!this.board.selectedPiece)
             return;
         this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_7__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].YELLOW);
         this.graphics.beginFill(undefined, 0);
-        this.graphics.drawShape(this.selectedPiece);
+        this.graphics.drawShape(this.board.selectedPiece);
         this.graphics.lineStyle(0);
         this.graphics.endFill();
     }
     drawCapturePieces() {
-        if (this.capturePieces.length < 1)
+        if (this.board.capturePieces.length < 1)
             return;
         this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_7__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_6__["default"].RED);
         this.graphics.beginFill(undefined, 0);
-        for (const pieces of this.capturePieces) {
+        for (const pieces of this.board.capturePieces) {
             this.graphics.drawShape(pieces);
         }
         this.graphics.lineStyle(0);
@@ -43012,8 +43192,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _piece__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./piece */ "./src/classes/piece.ts");
+/* harmony import */ var _config_states__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../config/states */ "./src/config/states.ts");
 
+// import Piece from './piece';
 class Heuristic {
     /* eslint-enable */
     constructor(checkers) {
@@ -43022,7 +43203,8 @@ class Heuristic {
         this.kingFactor = 8;
         this.trapKingFactor = 3;
         this.runawayFactor = 4;
-        this.turn = true;
+        this.trapFactor = 3;
+        this.oppositionFactor = 3;
         /* eslint-disable */
         // Mid Game Position Factors
         this.midGamePositionFactors = [
@@ -43035,57 +43217,123 @@ class Heuristic {
             [0, 3, 0, 3, 0, 3, 0, 4],
             [4, 0, 4, 0, 4, 0, 4, 0]
         ];
+        this.endGamePositionFactors = [
+            [0, 6, 0, 8, 0, 2, 0, 1],
+            [6, 0, 2, 0, 7, 0, 3, 0],
+            [0, 2, 0, 9, 0, 5, 0, 2],
+            [1, 0, 9, 0, 9, 0, 3, 0],
+            [0, 3, 0, 9, 0, 9, 0, 1],
+            [2, 0, 5, 0, 9, 0, 2, 0],
+            [0, 3, 0, 7, 0, 2, 0, 6],
+            [1, 0, 2, 0, 8, 0, 6, 0]
+        ];
         this.checkers = checkers;
         this.board = checkers.board;
-        this.playerPieces = checkers.playerPieces;
-        this.aiPieces = checkers.aiPieces;
     }
     getHeuristic() {
-        const playerCount = this.playerPieces.length;
-        const aiCount = this.aiPieces.length;
-        if (playerCount < 1) {
-            return this.winFactor;
-        }
-        if (aiCount < 1) {
-            return -this.winFactor;
-        }
+        const playerCount = this.board.playerPieces.length;
+        const aiCount = this.board.aiPieces.length;
         let score = 0;
+        // const tmp = 0;
         //** Value Factors */
         // Piece Count
         score += (aiCount - playerCount) * this.pieceFactor;
         // King Count
-        score += (this.checkers.aiKings - this.checkers.playerKings) * this.kingFactor;
-        for (const piece of this.playerPieces) {
-            const { x, y, } = piece.position;
-            if (piece.king) { // Check for trapped king
-                if (this.board.isKingTrapped(x, y, piece.player))
-                    score += this.trapKingFactor;
-            }
-            else { // Check for runaway piece
-                if (this.board.isRunaway(x, y, piece.player))
-                    score -= this.runawayFactor;
-            }
-        }
-        for (const piece of this.aiPieces) {
-            const { x, y, } = piece.position;
-            if (piece.king) { // Check for trapped king
-                if (this.board.isKingTrapped(x, y, piece.player))
-                    score -= this.trapKingFactor;
-            }
-            else { // Check for runaway piece
-                if (this.board.isRunaway(x, y, piece.player))
-                    score += this.runawayFactor;
-            }
-        }
-        //** Positional */
-        let cell;
-        for (let y = 0; y < 8; y++) {
-            for (let x = y + 1 & 1; x < 8; x += 2) {
-                cell = this.board.getCell(x, y);
-                if (cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"]) {
-                    score += this.midGamePositionFactors[y][x] * (cell.player ? -1 : 1);
+        score += (this.board.aiKings - this.board.playerKings) * this.kingFactor;
+        switch (this.checkers.state) {
+            case _config_states__WEBPACK_IMPORTED_MODULE_0__["default"].MID:
+                for (const piece of this.board.playerPieces) {
+                    const { x, y, } = piece.position;
+                    score += this.midGamePositionFactors[y][x]; // Positional
+                    if (piece.king) { // Check for trapped king
+                        if (this.board.isKingTrapped(x, y, piece.player))
+                            score += this.trapKingFactor;
+                    }
+                    else { // Check for runaway piece
+                        if (this.board.isRunaway(x, y, piece.player))
+                            score -= this.runawayFactor;
+                    }
                 }
-            }
+                for (const piece of this.board.aiPieces) {
+                    const { x, y, } = piece.position;
+                    score -= this.midGamePositionFactors[y][x]; // Positional
+                    if (piece.king) { // Check for trapped king
+                        if (this.board.isKingTrapped(x, y, piece.player))
+                            score -= this.trapKingFactor;
+                    }
+                    else { // Check for runaway piece
+                        if (this.board.isRunaway(x, y, piece.player))
+                            score += this.runawayFactor;
+                    }
+                }
+                break;
+            case _config_states__WEBPACK_IMPORTED_MODULE_0__["default"].END:
+                //** Positional */
+                for (const piece of this.board.playerPieces) {
+                    const { x, y, } = piece.position;
+                    score += this.endGamePositionFactors[y][x];
+                }
+                for (const piece of this.board.aiPieces) {
+                    const { x, y, } = piece.position;
+                    score -= this.endGamePositionFactors[y][x];
+                }
+                // Distance to from corner edge
+                // AI Advantage
+                if (playerCount < aiCount) {
+                    // Force the piece to a corner rather than a double corner
+                    // for (const piece of this.board.playerPieces) {
+                    //   const { x, y, } = piece.position;
+                    //   score += (14 - x + Math.abs(7 - y));
+                    // }
+                    // for (const piece of this.board.aiPieces) {
+                    //   const { x, y } = piece.position;
+                    //   score +=
+                    // }
+                }
+                // else {
+                //   for (const piece of this.board.aiPieces) {
+                //     const { x, y, } = piece.position;
+                //     score -= 12 - x - Math.abs(y - 6);
+                //   }
+                // }
+                // Sum of distances
+                for (const { position: pPos, } of this.board.playerPieces) {
+                    for (const { position: aPos, } of this.board.aiPieces) {
+                        score += (14 - (Math.abs(pPos.x - aPos.x) + Math.abs(pPos.y - aPos.y))) * 3;
+                    }
+                }
+                // Farthest Distance
+                // tmp = 0;
+                // for (const { position: pPos, } of this.board.playerPieces) {
+                //   for (const { position: aPos, } of this.board.aiPieces) {
+                //     tmp = Math.max(tmp, Math.abs(pPos.x - aPos.x) + Math.abs(pPos.y - aPos.y));
+                //   }
+                // }
+                // score += 14 - tmp;
+                // Trapped Pieces
+                for (const piece of this.board.playerPieces) {
+                    const { x, y, } = piece.position;
+                    if (piece.king) {
+                        if (this.board.isKingTrapped(x, y, piece.player))
+                            score += this.trapFactor;
+                    }
+                    else {
+                        if (this.board.isPieceTrapped(x, y, piece.player))
+                            score += this.trapFactor;
+                    }
+                }
+                for (const piece of this.board.aiPieces) {
+                    const { x, y, } = piece.position;
+                    if (piece.king) {
+                        if (this.board.isKingTrapped(x, y, piece.player))
+                            score -= this.trapFactor;
+                    }
+                    else {
+                        if (this.board.isPieceTrapped(x, y, piece.player))
+                            score -= this.trapFactor;
+                    }
+                }
+                break;
         }
         return score;
     }
@@ -43146,18 +43394,18 @@ __webpack_require__.r(__webpack_exports__);
 class Input {
     constructor(checkers) {
         this.checkers = checkers;
+        this.board = checkers.board;
     }
     mousedown(ev) {
-        if (!this.checkers || !this.checkers.inputting || !this.checkers.playerTurn)
+        if (!this.checkers.inputting || !this.board.playerTurn)
             return;
-        const board = this.checkers.board;
         const x = Math.floor(ev.data.global.x / _config_values__WEBPACK_IMPORTED_MODULE_2__.TILE_SIZE);
         const y = Math.floor(ev.data.global.y / _config_values__WEBPACK_IMPORTED_MODULE_2__.TILE_SIZE);
-        const cell = board.getCell(x, y);
+        const cell = this.board.getCell(x, y);
         if (!cell)
             return;
         // Check if highlight/possible player move
-        if (cell instanceof _highlight__WEBPACK_IMPORTED_MODULE_1__["default"] && this.checkers.selectedPiece) {
+        if (cell instanceof _highlight__WEBPACK_IMPORTED_MODULE_1__["default"] && this.board.selectedPiece) {
             this.checkers.handlePlayerMove(x, y);
             return;
         }
@@ -43237,6 +43485,27 @@ const COLORS = {
 
 /***/ }),
 
+/***/ "./src/config/states.ts":
+/*!******************************!*\
+  !*** ./src/config/states.ts ***!
+  \******************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+const STATES = {
+    START: 0,
+    MID: 1,
+    END: 2,
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (STATES);
+
+
+/***/ }),
+
 /***/ "./src/config/values.ts":
 /*!******************************!*\
   !*** ./src/config/values.ts ***!
@@ -43250,13 +43519,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "HALF_TILE_SIZE": () => (/* binding */ HALF_TILE_SIZE),
 /* harmony export */   "PIECE_RADIUS": () => (/* binding */ PIECE_RADIUS),
 /* harmony export */   "OUTLINE_SIZE": () => (/* binding */ OUTLINE_SIZE),
-/* harmony export */   "MAX_DEPTH": () => (/* binding */ MAX_DEPTH)
+/* harmony export */   "MAX_DEPTH_MID": () => (/* binding */ MAX_DEPTH_MID),
+/* harmony export */   "MAX_DEPTH_END": () => (/* binding */ MAX_DEPTH_END)
 /* harmony export */ });
 const TILE_SIZE = 64;
 const HALF_TILE_SIZE = TILE_SIZE / 2;
 const PIECE_RADIUS = HALF_TILE_SIZE - 4;
 const OUTLINE_SIZE = 4;
-const MAX_DEPTH = 7;
+const MAX_DEPTH_MID = 9;
+const MAX_DEPTH_END = 26;
 
 
 /***/ }),

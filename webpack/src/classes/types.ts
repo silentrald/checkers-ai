@@ -10,8 +10,8 @@ export interface Vector2d {
 
 export interface Move {
     moves: Vector2d[];
-    piece: Piece;
     starting: Vector2d;
+    ending: Vector2d;
     capturing: boolean;
-    // promoted?: boolean;
+    promoted?: boolean;
 }
