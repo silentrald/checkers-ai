@@ -77,48 +77,48 @@ class AI {
 
     if (piece.player) {
       if (piece.king) {
-        if (this.board.isBottomLeftCapturable(x, y, false)) {
+        if (this.board.isBottomLeftJumpable(x, y, false)) {
           this.searchAllPossibleJumps(
             piece, x - 2, y + 2, moves, output
           );
         }
-        if (this.board.isBottomRightCapturable(x, y, false)) {
+        if (this.board.isBottomRightJumpable(x, y, false)) {
           this.searchAllPossibleJumps(
             piece, x + 2, y + 2, moves, output
           );
         }
       }
 
-      if (this.board.isTopLeftCapturable(x, y, false)) {
+      if (this.board.isTopLeftJumpable(x, y, false)) {
         this.searchAllPossibleJumps(
           piece, x - 2, y - 2, moves, output
         );
       }
-      if (this.board.isTopRightCapturable(x, y, false)) {
+      if (this.board.isTopRightJumpable(x, y, false)) {
         this.searchAllPossibleJumps(
           piece, x + 2, y - 2, moves, output
         );
       }
     } else {
       if (piece.king) {
-        if (this.board.isTopLeftCapturable(x, y, true)) {
+        if (this.board.isTopLeftJumpable(x, y, true)) {
           this.searchAllPossibleJumps(
             piece, x - 2, y - 2, moves, output
           );
         }
-        if (this.board.isTopRightCapturable(x, y, true)) {
+        if (this.board.isTopRightJumpable(x, y, true)) {
           this.searchAllPossibleJumps(
             piece, x + 2, y - 2, moves, output
           );
         }
       }
 
-      if (this.board.isBottomLeftCapturable(x, y, true)) {
+      if (this.board.isBottomLeftJumpable(x, y, true)) {
         this.searchAllPossibleJumps(
           piece, x - 2, y + 2, moves, output
         );
       }
-      if (this.board.isBottomRightCapturable(x, y, true)) {
+      if (this.board.isBottomRightJumpable(x, y, true)) {
         this.searchAllPossibleJumps(
           piece, x + 2, y + 2, moves, output
         );
