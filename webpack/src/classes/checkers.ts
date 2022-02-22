@@ -4,10 +4,12 @@ import Piece from './piece';
 import Highlight from './highlight';
 import Input from './input';
 import AI from './ai';
+import Move from './move';
 
 import COLORS from '../config/colors';
 import { OUTLINE_SIZE, TILE_SIZE } from '../config/values';
 import STATES from '../config/states';
+import { Vector2d } from './types';
 
 class Checkers {
   app = new PIXI.Application();
@@ -17,9 +19,10 @@ class Checkers {
   ai: AI = new AI(this);
 
   inputting = true;
-  capturing = false;
+  jumping = false;
   promoted = false;
   state = STATES.MID;
+  private multiJumpMove: Move | undefined;
 
   constructor() {
     this.setup();
@@ -76,7 +79,7 @@ class Checkers {
     this.resetHighlights();
 
     // Mandatory Jumps
-    if (this.board.capturePieces.length > 0) {
+    if (this.board.jumpPieces.length > 0) {
       if (piece.king) {
         if (this.board.isBottomLeftCapturable(x, y, false))
           this.addHighlight(x - 2, y + 2);
@@ -105,7 +108,7 @@ class Checkers {
     this.draw();
   }
 
-  highlightAdditionalCaptures(piece: Piece) {
+  highlightAdditionalJumps(piece: Piece) {
     const { x, y, } = piece.position;
 
     if (piece.king) {
@@ -128,26 +131,46 @@ class Checkers {
 
     const piece = this.board.selectedPiece!;
 
-    if (this.capturing || this.board.capturePieces.length > 0) {
-      this.capturePiece(piece, x, y);
+    const move = new Move({
+      moves: [ {
+        x,
+        y,
+      } ],
+      starting: {
+        ...piece.position,
+      },
+      ending: {
+        x,
+        y,
+      },
+      jumping: this.jumping || this.board.jumpPieces.length > 0,
+    });
+
+    if (this.jumping || this.board.jumpPieces.length > 0) {
+      this.jump(move);
       this.board.tempCaptured.splice(0);
-      this.board.capturePieces.splice(0);
+      this.board.jumpPieces.splice(0);
 
       if (!this.promoted) {
       // Check if the current piece can still capture
-        this.highlightAdditionalCaptures(piece);
+        this.highlightAdditionalJumps(piece);
         if (this.board.highlights.length > 0) {
-          this.capturing = true;
+          this.jumping = true;
           this.inputting = true;
+          if (this.multiJumpMove) {
+            this.multiJumpMove.addJump(move);
+          } else {
+            this.multiJumpMove = move;
+          }
           this.draw();
           return;
         }
       }
 
-      this.capturing = false;
+      this.jumping = false;
       this.promoted = false;
     } else {
-      this.movePiece(piece, x, y);
+      this.move(move);
     }
 
     this.board.playerTurn = !this.board.playerTurn;
@@ -195,7 +218,7 @@ class Checkers {
     }
   }
 
-  private _movePiece(piece: Piece, x: number, y: number) {
+  private _move(piece: Piece, x: number, y: number) {
     const { position: pos, } = piece;
 
     // Update the grid
@@ -212,76 +235,108 @@ class Checkers {
     piece.setPosition(x, y);
   }
 
-  movePiece(piece: Piece, x: number, y: number) {
-    this._movePiece(piece, x, y);
+  move(move: Move) {
+    const piece = this.board.getCell(move.starting.x, move.starting.y) as Piece;
+    this._move(piece, move.ending.x, move.ending.y);
     this.promoteToKing(piece);
+
+    // DEBUG
+    console.log(this.board.getState());
+    console.log('move', move);
   }
 
-  reverseMovePiece(piece: Piece, x: number, y: number) {
+  reverseMove(move: Move) {
+    const piece = this.board.getCell(move.ending.x, move.ending.y) as Piece;
     this.demoteKing(piece);
-    this._movePiece(piece, x, y);
+    this._move(piece, move.starting.x, move.starting.y);
+
+    // DEBUG
+    console.log(this.board.getState());
+    console.log('reverse move', move);
   }
 
-  capturePiece(piece: Piece, x: number, y: number) {
-    const { position: pos, } = piece;
+  jump(move: Move) {
+    const piece = this.board.getCell(move.starting.x, move.starting.y) as Piece;
 
-    // Get the center piece and delete it
-    const capX = Math.abs(pos.x + x) >> 1;
-    const capY = Math.abs(pos.y + y) >> 1;
-    const captured = this.board.getCell(capX, capY) as Piece;
-    this.board.setCell(capX, capY, null);
-    this.board.tempCaptured.push(captured);
+    for (const { x, y, } of move.moves) {
+      // Get the center piece and delete it
+      const { position: pos, } = piece;
+      const capX = Math.abs(pos.x + x) >> 1;
+      const capY = Math.abs(pos.y + y) >> 1;
+      const captured = this.board.getCell(capX, capY) as Piece;
+      this.board.setCell(capX, capY, null);
+      this.board.tempCaptured.push(captured);
 
-    // Move the piece
-    this._movePiece(piece, x, y);
-
-    if (captured.player) {
-      this.board.playerPieces.splice(this.board.playerPieces.indexOf(captured), 1);
-      if (captured.king) {
-        this.board.playerKings--;
-        this.board.setKing(capX, capY, false);
+      if (captured.player) {
+        this.board.playerPieces.splice(this.board.playerPieces.indexOf(captured), 1);
+        if (captured.king) {
+          this.board.playerKings--;
+          this.board.setKing(capX, capY, false);
+        }
+      } else {
+        this.board.aiPieces.splice(this.board.aiPieces.indexOf(captured), 1);
+        if (captured.king) {
+          this.board.aiKings--;
+          this.board.setKing(capX, capY, false);
+        }
       }
-    } else {
-      this.board.aiPieces.splice(this.board.aiPieces.indexOf(captured), 1);
-      if (captured.king) {
-        this.board.aiKings--;
-        this.board.setKing(capX, capY, false);
-      }
+
+      // Move the piece
+      this._move(piece, x, y);
     }
     this.promoteToKing(piece);
+
+    // DEBUG
+    console.log(this.board.getState());
+    console.log('jump', move);
   }
 
-  reverseCapturePiece(piece: Piece, x: number, y: number) {
+  reverseJump(move: Move) {
+    const piece = this.board.getCell(move.ending.x, move.ending.y) as Piece;
     this.demoteKing(piece);
 
     // Move the piece
-    this._movePiece(piece, x, y);
+    const temp = move.moves.pop() as Vector2d;
+    move.moves.reverse();
+    move.moves.push(move.starting);
 
-    // Get the captured piece and put it back
-    const captured = this.board.tempCaptured.pop()!;
-    const capX = captured.position.x;
-    const capY = captured.position.y;
-    this.board.setCell(capX, capY, captured);
+    for (const { x, y, } of move.moves) {
+      // Move the piece
+      this._move(piece, x, y);
 
-    if (captured.player) {
-      this.board.playerPieces.push(captured);
-      if (captured.king) {
-        this.board.playerKings++;
-        this.board.setKing(capX, capY, true);
-      }
-    } else {
-      this.board.aiPieces.push(captured);
-      if (captured.king) {
-        this.board.aiKings++;
-        this.board.setKing(capX, capY, true);
+      // Get the captured piece and put it back
+      const captured = this.board.tempCaptured.pop()!;
+      const capX = captured.position.x;
+      const capY = captured.position.y;
+      this.board.setCell(capX, capY, captured);
+
+      if (captured.player) {
+        this.board.playerPieces.push(captured);
+        if (captured.king) {
+          this.board.playerKings++;
+          this.board.setKing(capX, capY, true);
+        }
+      } else {
+        this.board.aiPieces.push(captured);
+        if (captured.king) {
+          this.board.aiKings++;
+          this.board.setKing(capX, capY, true);
+        }
       }
     }
+    move.moves.pop();
+    move.moves.reverse();
+    move.moves.push(temp);
+
+    // DEBUG
+    console.log(this.board.getState());
+    console.log('reverse jump', move);
   }
 
   // Turns
   setupTurn() {
-    this.board.capturePieces.splice(0);
-    this.board.capturePieces = this.getForceCaptures(this.board.playerTurn);
+    this.board.jumpPieces.splice(0);
+    this.board.jumpPieces = this.getForceJumps(this.board.playerTurn);
     this.promoted = false;
 
     // Change State
@@ -355,7 +410,7 @@ class Checkers {
   }
 
   hasAvailableMoves(playerTurn: boolean): boolean {
-    const capturing = this.board.capturePieces.length > 0;
+    const capturing = this.board.jumpPieces.length > 0;
     if (capturing) {
       return true;
     } else {
@@ -385,31 +440,31 @@ class Checkers {
     return false;
   }
 
-  getForceCaptures(player: boolean): Piece[] {
-    const capturePieces: Piece[] = [];
+  getForceJumps(player: boolean): Piece[] {
+    const jumpPieces: Piece[] = [];
 
     if (player) {
       for (const piece of this.board.playerPieces) {
         const { x, y, } = piece.position;
 
         if (this.board.isTopLeftCapturable(x, y, false)) {
-          capturePieces.push(piece);
+          jumpPieces.push(piece);
           continue;
         }
 
         if (this.board.isTopRightCapturable(x, y, false)) {
-          capturePieces.push(piece);
+          jumpPieces.push(piece);
           continue;
         }
 
         if (piece.king) {
           if (this.board.isBottomLeftCapturable(x, y, false)) {
-            capturePieces.push(piece);
+            jumpPieces.push(piece);
             continue;
           }
 
           if (this.board.isBottomRightCapturable(x, y, false)) {
-            capturePieces.push(piece);
+            jumpPieces.push(piece);
             continue;
           }
         }
@@ -419,30 +474,30 @@ class Checkers {
         const { x, y, } = piece.position;
 
         if (this.board.isBottomLeftCapturable(x, y, true)) {
-          capturePieces.push(piece);
+          jumpPieces.push(piece);
           continue;
         }
 
         if (this.board.isBottomRightCapturable(x, y, true)) {
-          capturePieces.push(piece);
+          jumpPieces.push(piece);
           continue;
         }
 
         if (piece.king) {
           if (this.board.isTopLeftCapturable(x, y, true)) {
-            capturePieces.push(piece);
+            jumpPieces.push(piece);
             continue;
           }
 
           if (this.board.isTopRightCapturable(x, y, true)) {
-            capturePieces.push(piece);
+            jumpPieces.push(piece);
             continue;
           }
         }
       }
     }
 
-    return capturePieces;
+    return jumpPieces;
   }
 
   // Draw Functions
@@ -451,7 +506,7 @@ class Checkers {
     this.drawPieces();
     this.drawHighlights();
     this.drawSelectedPiece();
-    this.drawCapturePieces();
+    this.drawJumpPieces();
   }
 
   drawTiles() {
@@ -524,12 +579,12 @@ class Checkers {
     this.graphics.endFill();
   }
 
-  drawCapturePieces() {
-    if (this.board.capturePieces.length < 1) return;
+  drawJumpPieces() {
+    if (this.board.jumpPieces.length < 1) return;
 
     this.graphics.lineStyle(OUTLINE_SIZE, COLORS.RED);
     this.graphics.beginFill(undefined, 0);
-    for (const pieces of this.board.capturePieces) {
+    for (const pieces of this.board.jumpPieces) {
       this.graphics.drawShape(pieces);
     }
     this.graphics.lineStyle(0);

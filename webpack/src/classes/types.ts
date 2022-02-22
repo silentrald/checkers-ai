@@ -8,10 +8,10 @@ export interface Vector2d {
     y: number;
 }
 
-export interface Move {
+export interface MoveConfig {
     moves: Vector2d[];
     starting: Vector2d;
     ending: Vector2d;
-    capturing: boolean;
+    jumping?: boolean;
     promoted?: boolean;
 }

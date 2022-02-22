@@ -2,8 +2,9 @@ import Checkers from './checkers';
 import Board from './board';
 import Piece from './piece';
 import Heuristic from './heuristic';
+import Move from './move';
 
-import { Move, Vector2d } from './types';
+import { Vector2d } from './types';
 import { MAX_DEPTH_MID, MAX_DEPTH_END } from '../config/values';
 import STATES from '../config/states';
 
@@ -43,21 +44,24 @@ class AI {
     this.heuristic = new Heuristic(checkers);
   }
 
-  private searchAllPossibleCaptureMoves(
-    piece: Piece, x: number, y: number,
+  private searchAllPossibleJumpMoves(
+    piece: Piece, ending: Vector2d,
     moves: Vector2d[], output: Vector2d[][]
   ) {
-    const pos = {
-      ...piece.position,
-    };
-    this.checkers.capturePiece(piece, x, y);
-    moves.push({
-      x,
-      y,
+    moves.push(ending);
+    const move = new Move({
+      starting: {
+        ...piece.position,
+      },
+      ending,
+      moves: [ ending ],
+      jumping: true,
     });
+    this.checkers.jump(move);
+
 
     if (!this.checkers.promoted) {
-      const temp = this.getAllPossibleCaptureMoves(piece, [ ...moves ]);
+      const temp = this.getAllPossibleJumpMoves(piece, [ ...moves ]);
       if (temp.length < 1) {
         output.push([ ...moves ]);
       } else {
@@ -68,60 +72,76 @@ class AI {
     }
 
     moves.pop();
-    this.checkers.reverseCapturePiece(piece, pos.x, pos.y);
+    this.checkers.reverseJump(move);
   }
 
-  private getAllPossibleCaptureMoves(piece: Piece, moves: Vector2d[]): Vector2d[][] {
+  private getAllPossibleJumpMoves(piece: Piece, moves: Vector2d[]): Vector2d[][] {
     const { x, y, } = piece.position;
     const output: Vector2d[][] = [];
 
     if (piece.player) {
       if (piece.king) {
         if (this.board.isBottomLeftCapturable(x, y, false)) {
-          this.searchAllPossibleCaptureMoves(
-            piece, x - 2, y + 2, moves, output
-          );
+          const pos = {
+            x: x - 2,
+            y: y + 2,
+          };
+          this.searchAllPossibleJumpMoves(piece, pos, moves, output);
         }
         if (this.board.isBottomRightCapturable(x, y, false)) {
-          this.searchAllPossibleCaptureMoves(
-            piece, x + 2, y + 2, moves, output
-          );
+          const pos = {
+            x: x + 2,
+            y: y + 2,
+          };
+          this.searchAllPossibleJumpMoves(piece, pos, moves, output);
         }
       }
 
       if (this.board.isTopLeftCapturable(x, y, false)) {
-        this.searchAllPossibleCaptureMoves(
-          piece, x - 2, y - 2, moves, output
-        );
+        const pos = {
+          x: x - 2,
+          y: y - 2,
+        };
+        this.searchAllPossibleJumpMoves(piece, pos, moves, output);
       }
       if (this.board.isTopRightCapturable(x, y, false)) {
-        this.searchAllPossibleCaptureMoves(
-          piece, x + 2, y - 2, moves, output
-        );
+        const pos = {
+          x: x + 2,
+          y: y - 2,
+        };
+        this.searchAllPossibleJumpMoves(piece, pos, moves, output);
       }
     } else {
       if (piece.king) {
         if (this.board.isTopLeftCapturable(x, y, true)) {
-          this.searchAllPossibleCaptureMoves(
-            piece, x - 2, y - 2, moves, output
-          );
+          const pos = {
+            x: x - 2,
+            y: y - 2,
+          };
+          this.searchAllPossibleJumpMoves(piece, pos, moves, output);
         }
         if (this.board.isTopRightCapturable(x, y, true)) {
-          this.searchAllPossibleCaptureMoves(
-            piece, x + 2, y - 2, moves, output
-          );
+          const pos = {
+            x: x + 2,
+            y: y - 2,
+          };
+          this.searchAllPossibleJumpMoves(piece, pos, moves, output);
         }
       }
 
       if (this.board.isBottomLeftCapturable(x, y, true)) {
-        this.searchAllPossibleCaptureMoves(
-          piece, x - 2, y + 2, moves, output
-        );
+        const pos = {
+          x: x - 2,
+          y: y + 2,
+        };
+        this.searchAllPossibleJumpMoves(piece, pos, moves, output);
       }
       if (this.board.isBottomRightCapturable(x, y, true)) {
-        this.searchAllPossibleCaptureMoves(
-          piece, x + 2, y + 2, moves, output
-        );
+        const pos = {
+          x: x + 2,
+          y: y + 2,
+        };
+        this.searchAllPossibleJumpMoves(piece, pos, moves, output);
       }
     }
 
@@ -131,20 +151,20 @@ class AI {
   getAllPossibleMoves(player: boolean): Move[] {
     const rootMoves: Move[] = [];
 
-    const capturePieces = this.checkers.getForceCaptures(player);
+    const jumpPieces = this.checkers.getForceJumps(player);
 
-    if (capturePieces.length > 0) {
-      for (const piece of capturePieces) {
-        const allMoves = this.getAllPossibleCaptureMoves(piece, []);
+    if (jumpPieces.length > 0) {
+      for (const piece of jumpPieces) {
+        const allMoves = this.getAllPossibleJumpMoves(piece, []);
         for (const moves of allMoves) {
-          rootMoves.push({
+          rootMoves.push(new Move({
             moves: [ ...moves ],
             starting: {
               ...piece.position,
             },
             ending: moves[moves.length - 1],
-            capturing: true,
-          });
+            jumping: true,
+          }));
         }
       }
     } else if (player) {
@@ -156,28 +176,26 @@ class AI {
               x: x - 1,
               y: y + 1,
             };
-            rootMoves.push({
-              moves:[ move ],
+            rootMoves.push(new Move({
+              moves: [ move ],
               starting: {
                 ...piece.position,
               },
               ending: move,
-              capturing: false,
-            });
+            }));
           }
           if (this.board.isBottomRightEmpty(x, y)) {
             const move = {
               x: x + 1,
               y: y + 1,
             };
-            rootMoves.push({
+            rootMoves.push(new Move({
               moves: [ move ],
               starting: {
                 ...piece.position,
               },
               ending: move,
-              capturing: false,
-            });
+            }));
           }
         }
 
@@ -186,28 +204,26 @@ class AI {
             x: x - 1,
             y: y - 1,
           };
-          rootMoves.push({
+          rootMoves.push(new Move({
             moves: [ move ],
             starting: {
               ...piece.position,
             },
             ending: move,
-            capturing: false,
-          });
+          }));
         }
         if (this.board.isTopRightEmpty(x, y)) {
           const move = {
             x: x + 1,
             y: y - 1,
           };
-          rootMoves.push({
+          rootMoves.push(new Move({
             moves: [ move ],
             starting: {
               ...piece.position,
             },
             ending: move,
-            capturing: false,
-          });
+          }));
         }
       }
     } else {
@@ -219,28 +235,26 @@ class AI {
               x: x - 1,
               y: y - 1,
             };
-            rootMoves.push({
+            rootMoves.push(new Move({
               moves: [ move ],
               starting: {
                 ...piece.position,
               },
               ending: move,
-              capturing: false,
-            });
+            }));
           }
           if (this.board.isTopRightEmpty(x, y)) {
             const move = {
               x: x + 1,
               y: y - 1,
             };
-            rootMoves.push({
+            rootMoves.push(new Move({
               moves: [ move ],
               starting: {
                 ...piece.position,
               },
               ending: move,
-              capturing: false,
-            });
+            }));
           }
         }
 
@@ -249,28 +263,27 @@ class AI {
             x: x - 1,
             y: y + 1,
           };
-          rootMoves.push({
-            moves:[ move ],
+          rootMoves.push(new Move({
+            moves: [ move ],
             starting: {
               ...piece.position,
             },
             ending: move,
-            capturing: false,
-          });
+          }));
         }
         if (this.board.isBottomRightEmpty(x, y)) {
           const move = {
             x: x + 1,
             y: y + 1,
           };
-          rootMoves.push({
+
+          rootMoves.push(new Move({
             moves: [ move ],
             starting: {
               ...piece.position,
             },
             ending: move,
-            capturing: false,
-          });
+          }));
         }
       }
     }
@@ -279,16 +292,10 @@ class AI {
   }
 
   private _move(move: Move) {
-    const {
-      starting, moves, capturing,
-    } = move;
-    const piece = this.board.getCell(starting.x, starting.y) as Piece;
-    if (capturing) {
-      for (const { x, y, } of moves)
-        this.checkers.capturePiece(piece, x, y);
+    if (move.jumping) {
+      this.checkers.jump(move);
     } else {
-      for (const { x, y, } of moves)
-        this.checkers.movePiece(piece, x, y);
+      this.checkers.move(move);
     }
 
     this.board.playerTurn = !this.board.playerTurn;
@@ -297,27 +304,14 @@ class AI {
   }
 
   private _reverseMove(move: Move) {
-    const {
-      moves, starting, ending, capturing,
-    } = move;
-    const piece = this.board.getCell(ending.x, ending.y) as Piece;
     this.checkers.promoted = !!move.promoted;
     this.board.playerTurn = !this.board.playerTurn;
 
-    const temp = moves.pop(); // Remove last move
-    moves.reverse();
-    if (capturing) {
-      for (const { x, y, } of moves)
-        this.checkers.reverseCapturePiece(piece, x, y);
-      this.checkers.reverseCapturePiece(piece, starting.x, starting.y);
+    if (move.jumping) {
+      this.checkers.reverseJump(move);
     } else {
-      for (const { x, y, } of moves)
-        this.checkers.reverseMovePiece(piece, x, y);
-      this.checkers.reverseMovePiece(piece, starting.x, starting.y);
+      this.checkers.reverseMove(move);
     }
-
-    moves.reverse();
-    moves.push(temp!); // Push it back the moves list
   }
 
   private quesceneSearch(
@@ -329,8 +323,8 @@ class AI {
     if (this.board.aiPieces.length === 0)
       return -2000;
 
-    const capturePieces = this.checkers.getForceCaptures(player);
-    const capturing = capturePieces.length > 0;
+    const jumpPieces = this.checkers.getForceJumps(player);
+    const capturing = jumpPieces.length > 0;
 
     if (!capturing) {
       const heuristic = this.heuristic.getHeuristic();
@@ -342,17 +336,17 @@ class AI {
     let val = 0;
     if (player) { // Player
       val = Infinity;
-      for (const piece of capturePieces) {
-        const captureMoves = this.getAllPossibleCaptureMoves(piece, []);
-        for (const moves of captureMoves) {
-          const move = {
+      for (const piece of jumpPieces) {
+        const jumpMoves = this.getAllPossibleJumpMoves(piece, []);
+        for (const moves of jumpMoves) {
+          const move = new Move({
             moves: [ ...moves ],
             starting: {
               ...piece.position,
             },
             ending: moves[moves.length - 1],
-            capturing: true,
-          };
+            jumping: true,
+          });
           this._move(move);
           val = Math.min(val, this.quesceneSearch(alpha, beta, false));
           this._reverseMove(move);
@@ -363,17 +357,17 @@ class AI {
       }
     } else { // AI
       val = -Infinity;
-      for (const piece of capturePieces) {
-        const captureMoves = this.getAllPossibleCaptureMoves(piece, []);
-        for (const moves of captureMoves) {
-          const move = {
+      for (const piece of jumpPieces) {
+        const jumpMoves = this.getAllPossibleJumpMoves(piece, []);
+        for (const moves of jumpMoves) {
+          const move = new Move({
             moves: [ ...moves ],
             starting: {
               ...piece.position,
             },
             ending: moves[moves.length - 1],
-            capturing: true,
-          };
+            jumping: true,
+          });
           this._move(move);
           val = Math.max(val, this.quesceneSearch(alpha, beta, true));
           this._reverseMove(move);
@@ -462,11 +456,6 @@ class AI {
       return this.negamax(depth, alpha, beta, 1);
   }
 
-  // TODO: Debug this
-  // 1. Get a state that is the longest to mate
-  // 2. Create a stack this will print the states,
-  // and check whether how many times the state gets visited
-  private stack: string[] = []; // DEBUG
   private mateSearch(move: Move, depth: number, player: boolean): MatingTree {
     const state = this.board.getState();
 
@@ -530,7 +519,6 @@ class AI {
     }
 
     this.treeWalk[state] = false;
-    this.stack.push(state);
 
     if (player) {
       // All should be a mate threat
@@ -539,9 +527,7 @@ class AI {
 
       for (const newMove of allMoves) {
         this._move(newMove);
-        const child = this.mateSearch({
-          ...newMove,
-        }, depth - 1, false);
+        const child = this.mateSearch(newMove, depth - 1, false);
         this._reverseMove(newMove);
 
         if (!child.mate) {
@@ -561,9 +547,7 @@ class AI {
       let min = Infinity;
       for (const newMove of allMoves) {
         this._move(newMove);
-        const child = this.mateSearch({
-          ...newMove,
-        }, depth - 1, true);
+        const child = this.mateSearch(newMove, depth - 1, true);
 
         if (child.mate) {
           if (child.count < min) {
@@ -634,7 +618,7 @@ class AI {
     for (const move of rootMoves) {
       this._move(move);
       heuristic = this.minimax(depth, -Infinity, Infinity, true);
-      // console.log(heuristic, move);
+      console.log(heuristic, move);
       if (heuristic > max) {
         max = heuristic;
         bestMove = move;

@@ -19,7 +19,7 @@ class Board {
   aiPieces: Piece[] = [];
   selectedPiece: Piece | null =  null;
   highlights: Highlight[] = [];
-  capturePieces: Piece[] = [];
+  jumpPieces: Piece[] = [];
   tempCaptured: Piece[] = [];
 
   constructor() {
@@ -102,7 +102,7 @@ class Board {
     this.aiPieces = [];
     this.selectedPiece =  null;
     this.highlights = [];
-    this.capturePieces = [];
+    this.jumpPieces = [];
     this.tempCaptured = [];
 
     const [
