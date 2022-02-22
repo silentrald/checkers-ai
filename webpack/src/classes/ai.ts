@@ -143,7 +143,7 @@ class AI {
               ...piece.position,
             },
             ending: moves[moves.length - 1],
-            capturing: true,
+            jumping: true,
           });
         }
       }
@@ -162,7 +162,7 @@ class AI {
                 ...piece.position,
               },
               ending: move,
-              capturing: false,
+              jumping: false,
             });
           }
           if (this.board.isBottomRightEmpty(x, y)) {
@@ -176,7 +176,7 @@ class AI {
                 ...piece.position,
               },
               ending: move,
-              capturing: false,
+              jumping: false,
             });
           }
         }
@@ -192,7 +192,7 @@ class AI {
               ...piece.position,
             },
             ending: move,
-            capturing: false,
+            jumping: false,
           });
         }
         if (this.board.isTopRightEmpty(x, y)) {
@@ -206,7 +206,7 @@ class AI {
               ...piece.position,
             },
             ending: move,
-            capturing: false,
+            jumping: false,
           });
         }
       }
@@ -225,7 +225,7 @@ class AI {
                 ...piece.position,
               },
               ending: move,
-              capturing: false,
+              jumping: false,
             });
           }
           if (this.board.isTopRightEmpty(x, y)) {
@@ -239,7 +239,7 @@ class AI {
                 ...piece.position,
               },
               ending: move,
-              capturing: false,
+              jumping: false,
             });
           }
         }
@@ -255,7 +255,7 @@ class AI {
               ...piece.position,
             },
             ending: move,
-            capturing: false,
+            jumping: false,
           });
         }
         if (this.board.isBottomRightEmpty(x, y)) {
@@ -269,7 +269,7 @@ class AI {
               ...piece.position,
             },
             ending: move,
-            capturing: false,
+            jumping: false,
           });
         }
       }
@@ -280,10 +280,10 @@ class AI {
 
   private _move(move: Move) {
     const {
-      starting, moves, capturing,
+      starting, moves, jumping,
     } = move;
     const piece = this.board.getCell(starting.x, starting.y) as Piece;
-    if (capturing) {
+    if (jumping) {
       for (const { x, y, } of moves)
         this.checkers.jump(piece, x, y);
     } else {
@@ -298,7 +298,7 @@ class AI {
 
   private _reverseMove(move: Move) {
     const {
-      moves, starting, ending, capturing,
+      moves, starting, ending, jumping,
     } = move;
     const piece = this.board.getCell(ending.x, ending.y) as Piece;
     this.checkers.promoted = !!move.promoted;
@@ -306,7 +306,7 @@ class AI {
 
     const temp = moves.pop(); // Remove last move
     moves.reverse();
-    if (capturing) {
+    if (jumping) {
       for (const { x, y, } of moves)
         this.checkers.reverseJump(piece, x, y);
       this.checkers.reverseJump(piece, starting.x, starting.y);
@@ -351,7 +351,7 @@ class AI {
               ...piece.position,
             },
             ending: moves[moves.length - 1],
-            capturing: true,
+            jumping: true,
           };
           this._move(move);
           val = Math.min(val, this.quesceneSearch(alpha, beta, false));
@@ -372,7 +372,7 @@ class AI {
               ...piece.position,
             },
             ending: moves[moves.length - 1],
-            capturing: true,
+            jumping: true,
           };
           this._move(move);
           val = Math.max(val, this.quesceneSearch(alpha, beta, true));
