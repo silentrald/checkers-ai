@@ -43,21 +43,21 @@ class AI {
     this.heuristic = new Heuristic(checkers);
   }
 
-  private searchAllPossibleCaptureMoves(
+  private searchAllPossibleJumps(
     piece: Piece, x: number, y: number,
     moves: Vector2d[], output: Vector2d[][]
   ) {
     const pos = {
       ...piece.position,
     };
-    this.checkers.capturePiece(piece, x, y);
+    this.checkers.jump(piece, x, y);
     moves.push({
       x,
       y,
     });
 
     if (!this.checkers.promoted) {
-      const temp = this.getAllPossibleCaptureMoves(piece, [ ...moves ]);
+      const temp = this.getAllPossibleJump(piece, [ ...moves ]);
       if (temp.length < 1) {
         output.push([ ...moves ]);
       } else {
@@ -68,58 +68,58 @@ class AI {
     }
 
     moves.pop();
-    this.checkers.reverseCapturePiece(piece, pos.x, pos.y);
+    this.checkers.reverseJump(piece, pos.x, pos.y);
   }
 
-  private getAllPossibleCaptureMoves(piece: Piece, moves: Vector2d[]): Vector2d[][] {
+  private getAllPossibleJump(piece: Piece, moves: Vector2d[]): Vector2d[][] {
     const { x, y, } = piece.position;
     const output: Vector2d[][] = [];
 
     if (piece.player) {
       if (piece.king) {
         if (this.board.isBottomLeftCapturable(x, y, false)) {
-          this.searchAllPossibleCaptureMoves(
+          this.searchAllPossibleJumps(
             piece, x - 2, y + 2, moves, output
           );
         }
         if (this.board.isBottomRightCapturable(x, y, false)) {
-          this.searchAllPossibleCaptureMoves(
+          this.searchAllPossibleJumps(
             piece, x + 2, y + 2, moves, output
           );
         }
       }
 
       if (this.board.isTopLeftCapturable(x, y, false)) {
-        this.searchAllPossibleCaptureMoves(
+        this.searchAllPossibleJumps(
           piece, x - 2, y - 2, moves, output
         );
       }
       if (this.board.isTopRightCapturable(x, y, false)) {
-        this.searchAllPossibleCaptureMoves(
+        this.searchAllPossibleJumps(
           piece, x + 2, y - 2, moves, output
         );
       }
     } else {
       if (piece.king) {
         if (this.board.isTopLeftCapturable(x, y, true)) {
-          this.searchAllPossibleCaptureMoves(
+          this.searchAllPossibleJumps(
             piece, x - 2, y - 2, moves, output
           );
         }
         if (this.board.isTopRightCapturable(x, y, true)) {
-          this.searchAllPossibleCaptureMoves(
+          this.searchAllPossibleJumps(
             piece, x + 2, y - 2, moves, output
           );
         }
       }
 
       if (this.board.isBottomLeftCapturable(x, y, true)) {
-        this.searchAllPossibleCaptureMoves(
+        this.searchAllPossibleJumps(
           piece, x - 2, y + 2, moves, output
         );
       }
       if (this.board.isBottomRightCapturable(x, y, true)) {
-        this.searchAllPossibleCaptureMoves(
+        this.searchAllPossibleJumps(
           piece, x + 2, y + 2, moves, output
         );
       }
@@ -131,11 +131,11 @@ class AI {
   getAllPossibleMoves(player: boolean): Move[] {
     const rootMoves: Move[] = [];
 
-    const capturePieces = this.checkers.getForceCaptures(player);
+    const capturePieces = this.checkers.getForceJumps(player);
 
     if (capturePieces.length > 0) {
       for (const piece of capturePieces) {
-        const allMoves = this.getAllPossibleCaptureMoves(piece, []);
+        const allMoves = this.getAllPossibleJump(piece, []);
         for (const moves of allMoves) {
           rootMoves.push({
             moves: [ ...moves ],
@@ -285,10 +285,10 @@ class AI {
     const piece = this.board.getCell(starting.x, starting.y) as Piece;
     if (capturing) {
       for (const { x, y, } of moves)
-        this.checkers.capturePiece(piece, x, y);
+        this.checkers.jump(piece, x, y);
     } else {
       for (const { x, y, } of moves)
-        this.checkers.movePiece(piece, x, y);
+        this.checkers.move(piece, x, y);
     }
 
     this.board.playerTurn = !this.board.playerTurn;
@@ -308,12 +308,12 @@ class AI {
     moves.reverse();
     if (capturing) {
       for (const { x, y, } of moves)
-        this.checkers.reverseCapturePiece(piece, x, y);
-      this.checkers.reverseCapturePiece(piece, starting.x, starting.y);
+        this.checkers.reverseJump(piece, x, y);
+      this.checkers.reverseJump(piece, starting.x, starting.y);
     } else {
       for (const { x, y, } of moves)
-        this.checkers.reverseMovePiece(piece, x, y);
-      this.checkers.reverseMovePiece(piece, starting.x, starting.y);
+        this.checkers.reverseMove(piece, x, y);
+      this.checkers.reverseMove(piece, starting.x, starting.y);
     }
 
     moves.reverse();
@@ -329,7 +329,7 @@ class AI {
     if (this.board.aiPieces.length === 0)
       return -2000;
 
-    const capturePieces = this.checkers.getForceCaptures(player);
+    const capturePieces = this.checkers.getForceJumps(player);
     const capturing = capturePieces.length > 0;
 
     if (!capturing) {
@@ -343,7 +343,7 @@ class AI {
     if (player) { // Player
       val = Infinity;
       for (const piece of capturePieces) {
-        const captureMoves = this.getAllPossibleCaptureMoves(piece, []);
+        const captureMoves = this.getAllPossibleJump(piece, []);
         for (const moves of captureMoves) {
           const move = {
             moves: [ ...moves ],
@@ -364,7 +364,7 @@ class AI {
     } else { // AI
       val = -Infinity;
       for (const piece of capturePieces) {
-        const captureMoves = this.getAllPossibleCaptureMoves(piece, []);
+        const captureMoves = this.getAllPossibleJump(piece, []);
         for (const moves of captureMoves) {
           const move = {
             moves: [ ...moves ],

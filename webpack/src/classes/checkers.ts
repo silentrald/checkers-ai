@@ -129,7 +129,7 @@ class Checkers {
     const piece = this.board.selectedPiece!;
 
     if (this.capturing || this.board.capturePieces.length > 0) {
-      this.capturePiece(piece, x, y);
+      this.jump(piece, x, y);
       this.board.tempCaptured.splice(0);
       this.board.capturePieces.splice(0);
 
@@ -147,7 +147,7 @@ class Checkers {
       this.capturing = false;
       this.promoted = false;
     } else {
-      this.movePiece(piece, x, y);
+      this.move(piece, x, y);
     }
 
     this.board.playerTurn = !this.board.playerTurn;
@@ -195,7 +195,7 @@ class Checkers {
     }
   }
 
-  private _movePiece(piece: Piece, x: number, y: number) {
+  private _move(piece: Piece, x: number, y: number) {
     const { position: pos, } = piece;
 
     // Update the grid
@@ -212,17 +212,17 @@ class Checkers {
     piece.setPosition(x, y);
   }
 
-  movePiece(piece: Piece, x: number, y: number) {
-    this._movePiece(piece, x, y);
+  move(piece: Piece, x: number, y: number) {
+    this._move(piece, x, y);
     this.promoteToKing(piece);
   }
 
-  reverseMovePiece(piece: Piece, x: number, y: number) {
+  reverseMove(piece: Piece, x: number, y: number) {
     this.demoteKing(piece);
-    this._movePiece(piece, x, y);
+    this._move(piece, x, y);
   }
 
-  capturePiece(piece: Piece, x: number, y: number) {
+  jump(piece: Piece, x: number, y: number) {
     const { position: pos, } = piece;
 
     // Get the center piece and delete it
@@ -233,7 +233,7 @@ class Checkers {
     this.board.tempCaptured.push(captured);
 
     // Move the piece
-    this._movePiece(piece, x, y);
+    this._move(piece, x, y);
 
     if (captured.player) {
       this.board.playerPieces.splice(this.board.playerPieces.indexOf(captured), 1);
@@ -251,11 +251,11 @@ class Checkers {
     this.promoteToKing(piece);
   }
 
-  reverseCapturePiece(piece: Piece, x: number, y: number) {
+  reverseJump(piece: Piece, x: number, y: number) {
     this.demoteKing(piece);
 
     // Move the piece
-    this._movePiece(piece, x, y);
+    this._move(piece, x, y);
 
     // Get the captured piece and put it back
     const captured = this.board.tempCaptured.pop()!;
@@ -281,7 +281,7 @@ class Checkers {
   // Turns
   setupTurn() {
     this.board.capturePieces.splice(0);
-    this.board.capturePieces = this.getForceCaptures(this.board.playerTurn);
+    this.board.capturePieces = this.getForceJumps(this.board.playerTurn);
     this.promoted = false;
 
     // Change State
@@ -385,7 +385,7 @@ class Checkers {
     return false;
   }
 
-  getForceCaptures(player: boolean): Piece[] {
+  getForceJumps(player: boolean): Piece[] {
     const capturePieces: Piece[] = [];
 
     if (player) {
