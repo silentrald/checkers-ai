@@ -162,7 +162,6 @@ class AI {
                 ...piece.position,
               },
               ending: move,
-              jumping: false,
             });
           }
           if (this.board.isBottomRightEmpty(x, y)) {
@@ -176,7 +175,6 @@ class AI {
                 ...piece.position,
               },
               ending: move,
-              jumping: false,
             });
           }
         }
@@ -192,7 +190,6 @@ class AI {
               ...piece.position,
             },
             ending: move,
-            jumping: false,
           });
         }
         if (this.board.isTopRightEmpty(x, y)) {
@@ -206,7 +203,6 @@ class AI {
               ...piece.position,
             },
             ending: move,
-            jumping: false,
           });
         }
       }
@@ -225,7 +221,6 @@ class AI {
                 ...piece.position,
               },
               ending: move,
-              jumping: false,
             });
           }
           if (this.board.isTopRightEmpty(x, y)) {
@@ -239,7 +234,6 @@ class AI {
                 ...piece.position,
               },
               ending: move,
-              jumping: false,
             });
           }
         }
@@ -255,7 +249,6 @@ class AI {
               ...piece.position,
             },
             ending: move,
-            jumping: false,
           });
         }
         if (this.board.isBottomRightEmpty(x, y)) {
@@ -269,7 +262,6 @@ class AI {
               ...piece.position,
             },
             ending: move,
-            jumping: false,
           });
         }
       }
@@ -462,11 +454,6 @@ class AI {
       return this.negamax(depth, alpha, beta, 1);
   }
 
-  // TODO: Debug this
-  // 1. Get a state that is the longest to mate
-  // 2. Create a stack this will print the states,
-  // and check whether how many times the state gets visited
-  private stack: string[] = []; // DEBUG
   private mateSearch(move: Move, depth: number, player: boolean): MatingTree {
     const state = this.board.getState();
 
@@ -530,7 +517,6 @@ class AI {
     }
 
     this.treeWalk[state] = false;
-    this.stack.push(state);
 
     if (player) {
       // All should be a mate threat
@@ -599,6 +585,8 @@ class AI {
       if (this.matingTree) {
         this._move(this.matingTree.move);
         this.board.tempCaptured.splice(0);
+
+        this.checkers.pushToMoveStack(this.matingTree.move);
         return;
       }
     }
@@ -621,8 +609,11 @@ class AI {
     const rootMoves = this.getAllPossibleMoves(false);
 
     if (rootMoves.length === 1) {
-      this._move(rootMoves[0]);
+      const bestMove = rootMoves[0];
+      this._move(bestMove);
       this.board.tempCaptured.splice(0);
+
+      this.checkers.pushToMoveStack(bestMove);
       return;
     }
 
@@ -683,6 +674,8 @@ class AI {
     this.board.tempCaptured.splice(0);
     this.transpositionTable = {};
     this.heuristicMemo = {};
+
+    this.checkers.pushToMoveStack(bestMove);
   }
 }
 

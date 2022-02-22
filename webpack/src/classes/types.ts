@@ -12,6 +12,7 @@ export interface Move {
     moves: Vector2d[];
     starting: Vector2d;
     ending: Vector2d;
-    jumping: boolean;
+    notation?: string;
+    jumping?: boolean;
     promoted?: boolean;
 }

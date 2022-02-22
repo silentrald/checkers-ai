@@ -29,7 +29,7 @@ class Input {
       return;
     }
 
-    if (this.checkers.capturing) return;
+    if (this.checkers.jumping) return;
 
     // Check if piece
     if (cell instanceof Piece) {

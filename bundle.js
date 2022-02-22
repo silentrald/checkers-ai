@@ -41752,24 +41752,19 @@ class AI {
         this.transpositionTable = {};
         this.treeWalk = {};
         this.mateMemo = {};
-        // TODO: Debug this
-        // 1. Get a state that is the longest to mate
-        // 2. Create a stack this will print the states,
-        // and check whether how many times the state gets visited
-        this.stack = []; // DEBUG
         this.checkers = checkers;
         this.board = checkers.board;
         this.heuristic = new _heuristic__WEBPACK_IMPORTED_MODULE_0__["default"](checkers);
     }
-    searchAllPossibleCaptureMoves(piece, x, y, moves, output) {
+    searchAllPossibleJumps(piece, x, y, moves, output) {
         const pos = Object.assign({}, piece.position);
-        this.checkers.capturePiece(piece, x, y);
+        this.checkers.jump(piece, x, y);
         moves.push({
             x,
             y,
         });
         if (!this.checkers.promoted) {
-            const temp = this.getAllPossibleCaptureMoves(piece, [...moves]);
+            const temp = this.getAllPossibleJump(piece, [...moves]);
             if (temp.length < 1) {
                 output.push([...moves]);
             }
@@ -41781,57 +41776,57 @@ class AI {
             output.push([...moves]);
         }
         moves.pop();
-        this.checkers.reverseCapturePiece(piece, pos.x, pos.y);
+        this.checkers.reverseJump(piece, pos.x, pos.y);
     }
-    getAllPossibleCaptureMoves(piece, moves) {
+    getAllPossibleJump(piece, moves) {
         const { x, y, } = piece.position;
         const output = [];
         if (piece.player) {
             if (piece.king) {
-                if (this.board.isBottomLeftCapturable(x, y, false)) {
-                    this.searchAllPossibleCaptureMoves(piece, x - 2, y + 2, moves, output);
+                if (this.board.isBottomLeftJumpable(x, y, false)) {
+                    this.searchAllPossibleJumps(piece, x - 2, y + 2, moves, output);
                 }
-                if (this.board.isBottomRightCapturable(x, y, false)) {
-                    this.searchAllPossibleCaptureMoves(piece, x + 2, y + 2, moves, output);
+                if (this.board.isBottomRightJumpable(x, y, false)) {
+                    this.searchAllPossibleJumps(piece, x + 2, y + 2, moves, output);
                 }
             }
-            if (this.board.isTopLeftCapturable(x, y, false)) {
-                this.searchAllPossibleCaptureMoves(piece, x - 2, y - 2, moves, output);
+            if (this.board.isTopLeftJumpable(x, y, false)) {
+                this.searchAllPossibleJumps(piece, x - 2, y - 2, moves, output);
             }
-            if (this.board.isTopRightCapturable(x, y, false)) {
-                this.searchAllPossibleCaptureMoves(piece, x + 2, y - 2, moves, output);
+            if (this.board.isTopRightJumpable(x, y, false)) {
+                this.searchAllPossibleJumps(piece, x + 2, y - 2, moves, output);
             }
         }
         else {
             if (piece.king) {
-                if (this.board.isTopLeftCapturable(x, y, true)) {
-                    this.searchAllPossibleCaptureMoves(piece, x - 2, y - 2, moves, output);
+                if (this.board.isTopLeftJumpable(x, y, true)) {
+                    this.searchAllPossibleJumps(piece, x - 2, y - 2, moves, output);
                 }
-                if (this.board.isTopRightCapturable(x, y, true)) {
-                    this.searchAllPossibleCaptureMoves(piece, x + 2, y - 2, moves, output);
+                if (this.board.isTopRightJumpable(x, y, true)) {
+                    this.searchAllPossibleJumps(piece, x + 2, y - 2, moves, output);
                 }
             }
-            if (this.board.isBottomLeftCapturable(x, y, true)) {
-                this.searchAllPossibleCaptureMoves(piece, x - 2, y + 2, moves, output);
+            if (this.board.isBottomLeftJumpable(x, y, true)) {
+                this.searchAllPossibleJumps(piece, x - 2, y + 2, moves, output);
             }
-            if (this.board.isBottomRightCapturable(x, y, true)) {
-                this.searchAllPossibleCaptureMoves(piece, x + 2, y + 2, moves, output);
+            if (this.board.isBottomRightJumpable(x, y, true)) {
+                this.searchAllPossibleJumps(piece, x + 2, y + 2, moves, output);
             }
         }
         return output;
     }
     getAllPossibleMoves(player) {
         const rootMoves = [];
-        const capturePieces = this.checkers.getForceCaptures(player);
+        const capturePieces = this.checkers.getForceJumps(player);
         if (capturePieces.length > 0) {
             for (const piece of capturePieces) {
-                const allMoves = this.getAllPossibleCaptureMoves(piece, []);
+                const allMoves = this.getAllPossibleJump(piece, []);
                 for (const moves of allMoves) {
                     rootMoves.push({
                         moves: [...moves],
                         starting: Object.assign({}, piece.position),
                         ending: moves[moves.length - 1],
-                        capturing: true,
+                        jumping: true,
                     });
                 }
             }
@@ -41849,7 +41844,6 @@ class AI {
                             moves: [move],
                             starting: Object.assign({}, piece.position),
                             ending: move,
-                            capturing: false,
                         });
                     }
                     if (this.board.isBottomRightEmpty(x, y)) {
@@ -41861,7 +41855,6 @@ class AI {
                             moves: [move],
                             starting: Object.assign({}, piece.position),
                             ending: move,
-                            capturing: false,
                         });
                     }
                 }
@@ -41874,7 +41867,6 @@ class AI {
                         moves: [move],
                         starting: Object.assign({}, piece.position),
                         ending: move,
-                        capturing: false,
                     });
                 }
                 if (this.board.isTopRightEmpty(x, y)) {
@@ -41886,7 +41878,6 @@ class AI {
                         moves: [move],
                         starting: Object.assign({}, piece.position),
                         ending: move,
-                        capturing: false,
                     });
                 }
             }
@@ -41904,7 +41895,6 @@ class AI {
                             moves: [move],
                             starting: Object.assign({}, piece.position),
                             ending: move,
-                            capturing: false,
                         });
                     }
                     if (this.board.isTopRightEmpty(x, y)) {
@@ -41916,7 +41906,6 @@ class AI {
                             moves: [move],
                             starting: Object.assign({}, piece.position),
                             ending: move,
-                            capturing: false,
                         });
                     }
                 }
@@ -41929,7 +41918,6 @@ class AI {
                         moves: [move],
                         starting: Object.assign({}, piece.position),
                         ending: move,
-                        capturing: false,
                     });
                 }
                 if (this.board.isBottomRightEmpty(x, y)) {
@@ -41941,7 +41929,6 @@ class AI {
                         moves: [move],
                         starting: Object.assign({}, piece.position),
                         ending: move,
-                        capturing: false,
                     });
                 }
             }
@@ -41949,36 +41936,36 @@ class AI {
         return rootMoves;
     }
     _move(move) {
-        const { starting, moves, capturing, } = move;
+        const { starting, moves, jumping, } = move;
         const piece = this.board.getCell(starting.x, starting.y);
-        if (capturing) {
+        if (jumping) {
             for (const { x, y, } of moves)
-                this.checkers.capturePiece(piece, x, y);
+                this.checkers.jump(piece, x, y);
         }
         else {
             for (const { x, y, } of moves)
-                this.checkers.movePiece(piece, x, y);
+                this.checkers.move(piece, x, y);
         }
         this.board.playerTurn = !this.board.playerTurn;
         move.promoted = this.checkers.promoted;
         this.checkers.promoted = false;
     }
     _reverseMove(move) {
-        const { moves, starting, ending, capturing, } = move;
+        const { moves, starting, ending, jumping, } = move;
         const piece = this.board.getCell(ending.x, ending.y);
         this.checkers.promoted = !!move.promoted;
         this.board.playerTurn = !this.board.playerTurn;
         const temp = moves.pop(); // Remove last move
         moves.reverse();
-        if (capturing) {
+        if (jumping) {
             for (const { x, y, } of moves)
-                this.checkers.reverseCapturePiece(piece, x, y);
-            this.checkers.reverseCapturePiece(piece, starting.x, starting.y);
+                this.checkers.reverseJump(piece, x, y);
+            this.checkers.reverseJump(piece, starting.x, starting.y);
         }
         else {
             for (const { x, y, } of moves)
-                this.checkers.reverseMovePiece(piece, x, y);
-            this.checkers.reverseMovePiece(piece, starting.x, starting.y);
+                this.checkers.reverseMove(piece, x, y);
+            this.checkers.reverseMove(piece, starting.x, starting.y);
         }
         moves.reverse();
         moves.push(temp); // Push it back the moves list
@@ -41988,7 +41975,7 @@ class AI {
             return 2000;
         if (this.board.aiPieces.length === 0)
             return -2000;
-        const capturePieces = this.checkers.getForceCaptures(player);
+        const capturePieces = this.checkers.getForceJumps(player);
         const capturing = capturePieces.length > 0;
         if (!capturing) {
             const heuristic = this.heuristic.getHeuristic();
@@ -42000,13 +41987,13 @@ class AI {
         if (player) { // Player
             val = Infinity;
             for (const piece of capturePieces) {
-                const captureMoves = this.getAllPossibleCaptureMoves(piece, []);
+                const captureMoves = this.getAllPossibleJump(piece, []);
                 for (const moves of captureMoves) {
                     const move = {
                         moves: [...moves],
                         starting: Object.assign({}, piece.position),
                         ending: moves[moves.length - 1],
-                        capturing: true,
+                        jumping: true,
                     };
                     this._move(move);
                     val = Math.min(val, this.quesceneSearch(alpha, beta, false));
@@ -42020,13 +42007,13 @@ class AI {
         else { // AI
             val = -Infinity;
             for (const piece of capturePieces) {
-                const captureMoves = this.getAllPossibleCaptureMoves(piece, []);
+                const captureMoves = this.getAllPossibleJump(piece, []);
                 for (const moves of captureMoves) {
                     const move = {
                         moves: [...moves],
                         starting: Object.assign({}, piece.position),
                         ending: moves[moves.length - 1],
-                        capturing: true,
+                        jumping: true,
                     };
                     this._move(move);
                     val = Math.max(val, this.quesceneSearch(alpha, beta, true));
@@ -42149,7 +42136,6 @@ class AI {
             return node;
         }
         this.treeWalk[state] = false;
-        this.stack.push(state);
         if (player) {
             // All should be a mate threat
             let max = -Infinity;
@@ -42202,6 +42188,7 @@ class AI {
             if (this.matingTree) {
                 this._move(this.matingTree.move);
                 this.board.tempCaptured.splice(0);
+                this.checkers.pushToMoveStack(this.matingTree.move);
                 return;
             }
         }
@@ -42218,8 +42205,10 @@ class AI {
         // Check for moves
         const rootMoves = this.getAllPossibleMoves(false);
         if (rootMoves.length === 1) {
-            this._move(rootMoves[0]);
+            const bestMove = rootMoves[0];
+            this._move(bestMove);
             this.board.tempCaptured.splice(0);
+            this.checkers.pushToMoveStack(bestMove);
             return;
         }
         // Minimax for rootMoves
@@ -42268,6 +42257,7 @@ class AI {
         this.board.tempCaptured.splice(0);
         this.transpositionTable = {};
         this.heuristicMemo = {};
+        this.checkers.pushToMoveStack(bestMove);
     }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (AI);
@@ -42291,7 +42281,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 class Board {
-    constructor() {
+    constructor(fen) {
         this.state = {
             left: 0,
             right: 0,
@@ -42306,7 +42296,7 @@ class Board {
         this.aiPieces = [];
         this.selectedPiece = null;
         this.highlights = [];
-        this.capturePieces = [];
+        this.jumpPieces = [];
         this.tempCaptured = [];
         // Init Grid
         for (let r = 0; r < 8; r++) {
@@ -42315,6 +42305,9 @@ class Board {
                 this.grid[r].push(null);
             }
         }
+        if (!fen)
+            return;
+        this.setBoard(fen);
     }
     setCell(x, y, val) {
         this.grid[x][y] = val;
@@ -42382,7 +42375,7 @@ class Board {
         this.aiPieces = [];
         this.selectedPiece = null;
         this.highlights = [];
-        this.capturePieces = [];
+        this.jumpPieces = [];
         this.tempCaptured = [];
         const [turn, ais, players] = fen.split(':');
         this.playerTurn = turn === 'B';
@@ -42425,6 +42418,22 @@ class Board {
     getBoard() {
         return '';
     }
+    convertVectorToPosition({ x, y, }) {
+        return ((7 - y) << 2) + 3 - (x >> 1) + 1;
+    }
+    convertMoveToFen(move) {
+        const start = this.convertVectorToPosition(move.starting);
+        if (move.jumping) {
+            let notation = `${start}`;
+            for (const pos of move.moves) {
+                notation += 'x' + this.convertVectorToPosition(pos);
+            }
+            console.log(notation, move);
+            return notation;
+        }
+        const end = this.convertVectorToPosition(move.ending);
+        return start + '-' + end;
+    }
     // Move Check
     isTopLeftEmpty(x, y) {
         return x > 0 && y > 0 && !this.grid[x - 1][y - 1];
@@ -42439,25 +42448,25 @@ class Board {
         return x < 7 && y < 7 && !this.grid[x + 1][y + 1];
     }
     // Capture Checks
-    isTopLeftCapturable(x, y, opponent) {
+    isTopLeftJumpable(x, y, opponent) {
         if (x < 2 || y < 2)
             return false;
         const cell = this.grid[x - 1][y - 1];
         return cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"] && cell.player === opponent && !this.grid[x - 2][y - 2];
     }
-    isTopRightCapturable(x, y, opponent) {
+    isTopRightJumpable(x, y, opponent) {
         if (x > 5 || y < 2)
             return false;
         const cell = this.grid[x + 1][y - 1];
         return cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"] && cell.player === opponent && !this.grid[x + 2][y - 2];
     }
-    isBottomLeftCapturable(x, y, opponent) {
+    isBottomLeftJumpable(x, y, opponent) {
         if (x < 2 || y > 5)
             return false;
         const cell = this.grid[x - 1][y + 1];
         return cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"] && cell.player === opponent && !this.grid[x - 2][y + 2];
     }
-    isBottomRightCapturable(x, y, opponent) {
+    isBottomRightJumpable(x, y, opponent) {
         if (x > 5 || y > 5)
             return false;
         const cell = this.grid[x + 1][y + 1];
@@ -42722,14 +42731,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var pixi_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! pixi.js */ "./node_modules/pixi.js/dist/esm/pixi.js");
-/* harmony import */ var _board__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./board */ "./src/classes/board.ts");
-/* harmony import */ var _highlight__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./highlight */ "./src/classes/highlight.ts");
-/* harmony import */ var _input__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./input */ "./src/classes/input.ts");
-/* harmony import */ var _ai__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./ai */ "./src/classes/ai.ts");
-/* harmony import */ var _config_colors__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../config/colors */ "./src/config/colors.ts");
-/* harmony import */ var _config_values__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../config/values */ "./src/config/values.ts");
-/* harmony import */ var _config_states__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../config/states */ "./src/config/states.ts");
-
+/* harmony import */ var _highlight__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./highlight */ "./src/classes/highlight.ts");
+/* harmony import */ var _input__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./input */ "./src/classes/input.ts");
+/* harmony import */ var _ai__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./ai */ "./src/classes/ai.ts");
+/* harmony import */ var _config_colors__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../config/colors */ "./src/config/colors.ts");
+/* harmony import */ var _config_values__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../config/values */ "./src/config/values.ts");
+/* harmony import */ var _config_states__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../config/states */ "./src/config/states.ts");
 
 
 
@@ -42738,29 +42745,28 @@ __webpack_require__.r(__webpack_exports__);
 
 
 class Checkers {
-    constructor() {
+    constructor(board) {
         this.app = new pixi_js__WEBPACK_IMPORTED_MODULE_0__.Application();
         this.graphics = new pixi_js__WEBPACK_IMPORTED_MODULE_0__.Graphics();
-        this.board = new _board__WEBPACK_IMPORTED_MODULE_1__["default"]();
-        this.input = new _input__WEBPACK_IMPORTED_MODULE_3__["default"](this);
-        this.ai = new _ai__WEBPACK_IMPORTED_MODULE_4__["default"](this);
         this.inputting = true;
-        this.capturing = false;
+        this.jumping = false;
         this.promoted = false;
-        this.state = _config_states__WEBPACK_IMPORTED_MODULE_7__["default"].MID;
+        this.state = _config_states__WEBPACK_IMPORTED_MODULE_6__["default"].MID;
+        this.moveStack = [];
+        this.board = board;
+        this.input = new _input__WEBPACK_IMPORTED_MODULE_2__["default"](this);
+        this.ai = new _ai__WEBPACK_IMPORTED_MODULE_3__["default"](this);
         this.setup();
     }
     setup() {
         // Resize the application window
-        const size = _config_values__WEBPACK_IMPORTED_MODULE_6__.TILE_SIZE * 8;
+        const size = _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE * 8;
         this.app.renderer.resize(size, size);
-        this.app.renderer.backgroundColor = _config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].BEIGE;
+        this.app.renderer.backgroundColor = _config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].BEIGE;
         this.app.stage.addChild(this.graphics);
         // Setup the input system
         this.graphics.interactive = true;
         this.graphics.on('mousedown', (ev) => this.input.mousedown(ev));
-        // Setup Pieces
-        this.setupBoard('B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12');
         // Redraw
         this.draw();
         if (this.board.playerTurn) {
@@ -42782,7 +42788,7 @@ class Checkers {
         this.board.highlights.splice(0);
     }
     addHighlight(x, y) {
-        const highlight = new _highlight__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
+        const highlight = new _highlight__WEBPACK_IMPORTED_MODULE_1__["default"](x, y);
         this.board.highlights.push(highlight);
         this.board.setCell(x, y, highlight);
     }
@@ -42793,16 +42799,16 @@ class Checkers {
         this.board.selectedPiece = piece;
         this.resetHighlights();
         // Mandatory Jumps
-        if (this.board.capturePieces.length > 0) {
+        if (this.board.jumpPieces.length > 0) {
             if (piece.king) {
-                if (this.board.isBottomLeftCapturable(x, y, false))
+                if (this.board.isBottomLeftJumpable(x, y, false))
                     this.addHighlight(x - 2, y + 2);
-                if (this.board.isBottomRightCapturable(x, y, false))
+                if (this.board.isBottomRightJumpable(x, y, false))
                     this.addHighlight(x + 2, y + 2);
             }
-            if (this.board.isTopLeftCapturable(x, y, false))
+            if (this.board.isTopLeftJumpable(x, y, false))
                 this.addHighlight(x - 2, y - 2);
-            if (this.board.isTopRightCapturable(x, y, false))
+            if (this.board.isTopRightJumpable(x, y, false))
                 this.addHighlight(x + 2, y - 2);
         }
         else { // Normal Move
@@ -42819,43 +42825,75 @@ class Checkers {
         }
         this.draw();
     }
-    highlightAdditionalCaptures(piece) {
+    highlightAdditionalJumps(piece) {
         const { x, y, } = piece.position;
         if (piece.king) {
-            if (this.board.isBottomLeftCapturable(x, y, false))
+            if (this.board.isBottomLeftJumpable(x, y, false))
                 this.addHighlight(x - 2, y + 2);
-            if (this.board.isBottomRightCapturable(x, y, false))
+            if (this.board.isBottomRightJumpable(x, y, false))
                 this.addHighlight(x + 2, y + 2);
         }
-        if (this.board.isTopLeftCapturable(x, y, false))
+        if (this.board.isTopLeftJumpable(x, y, false))
             this.addHighlight(x - 2, y - 2);
-        if (this.board.isTopRightCapturable(x, y, false))
+        if (this.board.isTopRightJumpable(x, y, false))
             this.addHighlight(x + 2, y - 2);
+    }
+    pushToMoveStack(move) {
+        move.notation = this.board.convertMoveToFen(move);
+        const table = document.getElementById('move-notation');
+        const moves = this.moveStack.length >> 1;
+        const row = this.moveStack.length & 1 ? table.rows[moves + 1] : table.insertRow();
+        const cell = row.insertCell(this.moveStack.length & 1);
+        cell.innerHTML = move.notation || '';
+        this.moveStack.push(move);
     }
     // Piece Movement
     handlePlayerMove(x, y) {
         this.inputting = false; // block inputs
         this.resetHighlights();
+        const ending = {
+            x,
+            y,
+        };
         const piece = this.board.selectedPiece;
-        if (this.capturing || this.board.capturePieces.length > 0) {
-            this.capturePiece(piece, x, y);
+        const move = {
+            starting: Object.assign({}, piece.position),
+            ending,
+            moves: [ending],
+            jumping: this.jumping || this.board.jumpPieces.length > 0,
+        };
+        if (move.jumping) {
+            this.jump(piece, x, y);
             this.board.tempCaptured.splice(0);
-            this.board.capturePieces.splice(0);
+            this.board.jumpPieces.splice(0);
+            if (this.captureMove) {
+                this.captureMove.moves.push(ending);
+                this.captureMove.ending = ending;
+                this.captureMove.promoted = this.promoted;
+                console.log(this.captureMove);
+            }
+            else {
+                this.captureMove = move;
+            }
             if (!this.promoted) {
                 // Check if the current piece can still capture
-                this.highlightAdditionalCaptures(piece);
+                this.highlightAdditionalJumps(piece);
                 if (this.board.highlights.length > 0) {
-                    this.capturing = true;
+                    this.jumping = true;
                     this.inputting = true;
                     this.draw();
                     return;
                 }
             }
-            this.capturing = false;
+            this.pushToMoveStack(this.captureMove);
+            this.captureMove = undefined;
+            this.jumping = false;
             this.promoted = false;
         }
         else {
-            this.movePiece(piece, x, y);
+            this.move(piece, x, y);
+            move.promoted = this.promoted;
+            this.pushToMoveStack(move);
         }
         this.board.playerTurn = !this.board.playerTurn;
         this.board.selectedPiece = null;
@@ -42899,7 +42937,7 @@ class Checkers {
             }
         }
     }
-    _movePiece(piece, x, y) {
+    _move(piece, x, y) {
         const { position: pos, } = piece;
         // Update the grid
         this.board.setCell(x, y, piece);
@@ -42912,15 +42950,15 @@ class Checkers {
         // Update the piece
         piece.setPosition(x, y);
     }
-    movePiece(piece, x, y) {
-        this._movePiece(piece, x, y);
+    move(piece, x, y) {
+        this._move(piece, x, y);
         this.promoteToKing(piece);
     }
-    reverseMovePiece(piece, x, y) {
+    reverseMove(piece, x, y) {
         this.demoteKing(piece);
-        this._movePiece(piece, x, y);
+        this._move(piece, x, y);
     }
-    capturePiece(piece, x, y) {
+    jump(piece, x, y) {
         const { position: pos, } = piece;
         // Get the center piece and delete it
         const capX = Math.abs(pos.x + x) >> 1;
@@ -42929,7 +42967,7 @@ class Checkers {
         this.board.setCell(capX, capY, null);
         this.board.tempCaptured.push(captured);
         // Move the piece
-        this._movePiece(piece, x, y);
+        this._move(piece, x, y);
         if (captured.player) {
             this.board.playerPieces.splice(this.board.playerPieces.indexOf(captured), 1);
             if (captured.king) {
@@ -42946,10 +42984,10 @@ class Checkers {
         }
         this.promoteToKing(piece);
     }
-    reverseCapturePiece(piece, x, y) {
+    reverseJump(piece, x, y) {
         this.demoteKing(piece);
         // Move the piece
-        this._movePiece(piece, x, y);
+        this._move(piece, x, y);
         // Get the captured piece and put it back
         const captured = this.board.tempCaptured.pop();
         const capX = captured.position.x;
@@ -42972,13 +43010,13 @@ class Checkers {
     }
     // Turns
     setupTurn() {
-        this.board.capturePieces.splice(0);
-        this.board.capturePieces = this.getForceCaptures(this.board.playerTurn);
+        this.board.jumpPieces.splice(0);
+        this.board.jumpPieces = this.getForceJumps(this.board.playerTurn);
         this.promoted = false;
         // Change State
-        if (this.state === _config_states__WEBPACK_IMPORTED_MODULE_7__["default"].MID &&
+        if (this.state === _config_states__WEBPACK_IMPORTED_MODULE_6__["default"].MID &&
             (this.board.aiPieces.length + this.board.playerPieces.length < 8)) {
-            this.state = _config_states__WEBPACK_IMPORTED_MODULE_7__["default"].END;
+            this.state = _config_states__WEBPACK_IMPORTED_MODULE_6__["default"].END;
         }
     }
     passToAi() {
@@ -43036,8 +43074,8 @@ class Checkers {
         return false;
     }
     hasAvailableMoves(playerTurn) {
-        const capturing = this.board.capturePieces.length > 0;
-        if (capturing) {
+        const jumping = this.board.jumpPieces.length > 0;
+        if (jumping) {
             return true;
         }
         else {
@@ -43061,26 +43099,26 @@ class Checkers {
         }
         return false;
     }
-    getForceCaptures(player) {
-        const capturePieces = [];
+    getForceJumps(player) {
+        const jumpPieces = [];
         if (player) {
             for (const piece of this.board.playerPieces) {
                 const { x, y, } = piece.position;
-                if (this.board.isTopLeftCapturable(x, y, false)) {
-                    capturePieces.push(piece);
+                if (this.board.isTopLeftJumpable(x, y, false)) {
+                    jumpPieces.push(piece);
                     continue;
                 }
-                if (this.board.isTopRightCapturable(x, y, false)) {
-                    capturePieces.push(piece);
+                if (this.board.isTopRightJumpable(x, y, false)) {
+                    jumpPieces.push(piece);
                     continue;
                 }
                 if (piece.king) {
-                    if (this.board.isBottomLeftCapturable(x, y, false)) {
-                        capturePieces.push(piece);
+                    if (this.board.isBottomLeftJumpable(x, y, false)) {
+                        jumpPieces.push(piece);
                         continue;
                     }
-                    if (this.board.isBottomRightCapturable(x, y, false)) {
-                        capturePieces.push(piece);
+                    if (this.board.isBottomRightJumpable(x, y, false)) {
+                        jumpPieces.push(piece);
                         continue;
                     }
                 }
@@ -43089,27 +43127,27 @@ class Checkers {
         else {
             for (const piece of this.board.aiPieces) {
                 const { x, y, } = piece.position;
-                if (this.board.isBottomLeftCapturable(x, y, true)) {
-                    capturePieces.push(piece);
+                if (this.board.isBottomLeftJumpable(x, y, true)) {
+                    jumpPieces.push(piece);
                     continue;
                 }
-                if (this.board.isBottomRightCapturable(x, y, true)) {
-                    capturePieces.push(piece);
+                if (this.board.isBottomRightJumpable(x, y, true)) {
+                    jumpPieces.push(piece);
                     continue;
                 }
                 if (piece.king) {
-                    if (this.board.isTopLeftCapturable(x, y, true)) {
-                        capturePieces.push(piece);
+                    if (this.board.isTopLeftJumpable(x, y, true)) {
+                        jumpPieces.push(piece);
                         continue;
                     }
-                    if (this.board.isTopRightCapturable(x, y, true)) {
-                        capturePieces.push(piece);
+                    if (this.board.isTopRightJumpable(x, y, true)) {
+                        jumpPieces.push(piece);
                         continue;
                     }
                 }
             }
         }
-        return capturePieces;
+        return jumpPieces;
     }
     // Draw Functions
     draw() {
@@ -43117,45 +43155,45 @@ class Checkers {
         this.drawPieces();
         this.drawHighlights();
         this.drawSelectedPiece();
-        this.drawCapturePieces();
+        this.drawJumpPieces();
     }
     drawTiles() {
-        this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].BROWN);
+        this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].BROWN);
         for (let y = 0; y < 8; y++) {
             for (let x = y & 1 ^ 1; x < 8; x += 2) {
-                this.graphics.drawRect(x * _config_values__WEBPACK_IMPORTED_MODULE_6__.TILE_SIZE, y * _config_values__WEBPACK_IMPORTED_MODULE_6__.TILE_SIZE, _config_values__WEBPACK_IMPORTED_MODULE_6__.TILE_SIZE, _config_values__WEBPACK_IMPORTED_MODULE_6__.TILE_SIZE);
+                this.graphics.drawRect(x * _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE, y * _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE, _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE, _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE);
             }
         }
         this.graphics.endFill();
     }
     drawPieces() {
-        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_6__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].BLACK);
-        this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].WHITE);
+        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_5__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].BLACK);
+        this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].WHITE);
         for (const piece of this.board.playerPieces) {
             this.graphics.drawShape(piece);
             if (piece.king) {
-                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].RED);
+                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].RED);
                 // TODO: Add king texture
                 this.graphics.drawRect(piece.x - piece.radius / 2, piece.y - piece.radius / 2, piece.radius, piece.radius);
-                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].WHITE);
+                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].WHITE);
             }
         }
-        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_6__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].WHITE);
-        this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].BLACK);
+        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_5__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].WHITE);
+        this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].BLACK);
         for (const piece of this.board.aiPieces) {
             this.graphics.drawShape(piece);
             if (piece.king) {
-                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].RED);
+                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].RED);
                 // TODO: Add king texture
                 this.graphics.drawRect(piece.x - piece.radius / 2, piece.y - piece.radius / 2, piece.radius, piece.radius);
-                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].BLACK);
+                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].BLACK);
             }
         }
         this.graphics.lineStyle(0);
         this.graphics.endFill();
     }
     drawHighlights() {
-        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_6__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].WHITE);
+        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_5__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].WHITE);
         this.graphics.beginFill(undefined, 0);
         for (const highlight of this.board.highlights) {
             this.graphics.drawShape(highlight);
@@ -43166,18 +43204,18 @@ class Checkers {
     drawSelectedPiece() {
         if (!this.board.selectedPiece)
             return;
-        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_6__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].YELLOW);
+        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_5__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].YELLOW);
         this.graphics.beginFill(undefined, 0);
         this.graphics.drawShape(this.board.selectedPiece);
         this.graphics.lineStyle(0);
         this.graphics.endFill();
     }
-    drawCapturePieces() {
-        if (this.board.capturePieces.length < 1)
+    drawJumpPieces() {
+        if (this.board.jumpPieces.length < 1)
             return;
-        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_6__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_5__["default"].RED);
+        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_5__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].RED);
         this.graphics.beginFill(undefined, 0);
-        for (const pieces of this.board.capturePieces) {
+        for (const pieces of this.board.jumpPieces) {
             this.graphics.drawShape(pieces);
         }
         this.graphics.lineStyle(0);
@@ -43417,7 +43455,7 @@ class Input {
             this.checkers.handlePlayerMove(x, y);
             return;
         }
-        if (this.checkers.capturing)
+        if (this.checkers.jumping)
             return;
         // Check if piece
         if (cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"]) {
@@ -44943,12 +44981,16 @@ var __webpack_exports__ = {};
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _main_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./main.css */ "./src/main.css");
 /* harmony import */ var _classes_checkers__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./classes/checkers */ "./src/classes/checkers.ts");
+/* harmony import */ var _classes_board__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./classes/board */ "./src/classes/board.ts");
 var _a;
 
 
-const checkers = new _classes_checkers__WEBPACK_IMPORTED_MODULE_1__["default"]();
+
+const board = new _classes_board__WEBPACK_IMPORTED_MODULE_2__["default"]('B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12');
+const checkers = new _classes_checkers__WEBPACK_IMPORTED_MODULE_1__["default"](board);
 (_a = document.getElementById('checkers')) === null || _a === void 0 ? void 0 : _a.appendChild(checkers.app.view);
 window.checkers = checkers;
+window.board = board;
 
 })();
 

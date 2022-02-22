@@ -4,24 +4,32 @@ import Piece from './piece';
 import Highlight from './highlight';
 import Input from './input';
 import AI from './ai';
+import { Move } from './types';
 
 import COLORS from '../config/colors';
 import { OUTLINE_SIZE, TILE_SIZE } from '../config/values';
 import STATES from '../config/states';
 
 class Checkers {
+  board: Board;
+  input: Input;
+  ai: AI;
   app = new PIXI.Application();
   graphics = new PIXI.Graphics();
-  board = new Board();
-  input = new Input(this);
-  ai: AI = new AI(this);
 
   inputting = true;
-  capturing = false;
+  jumping = false;
   promoted = false;
   state = STATES.MID;
 
-  constructor() {
+  moveStack: Move[] = [];
+  captureMove: Move | undefined;
+
+  constructor(board: Board) {
+    this.board = board;
+    this.input = new Input(this);
+    this.ai = new AI(this);
+
     this.setup();
   }
 
@@ -35,9 +43,6 @@ class Checkers {
     // Setup the input system
     this.graphics.interactive = true;
     this.graphics.on('mousedown', (ev) => this.input.mousedown(ev));
-
-    // Setup Pieces
-    this.setupBoard('B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12');
 
     // Redraw
     this.draw();
@@ -121,33 +126,72 @@ class Checkers {
       this.addHighlight(x + 2, y - 2);
   }
 
+  pushToMoveStack(move: Move) {
+    move.notation = this.board.convertMoveToFen(move);
+
+    const table = document.getElementById('move-notation')! as HTMLTableElement;
+    const moves = this.moveStack.length >> 1;
+    const row = this.moveStack.length & 1 ? table.rows[moves + 1] : table.insertRow();
+    const cell = row.insertCell(this.moveStack.length & 1);
+    cell.innerHTML = move.notation || '';
+
+    this.moveStack.push(move);
+  }
+
   // Piece Movement
   handlePlayerMove(x: number, y: number) {
     this.inputting = false; // block inputs
     this.resetHighlights();
 
+    const ending = {
+      x,
+      y,
+    };
     const piece = this.board.selectedPiece!;
+    const move: Move = {
+      starting: {
+        ...piece.position,
+      },
+      ending,
+      moves: [ ending ],
+      jumping: this.jumping || this.board.jumpPieces.length > 0,
+    };
 
-    if (this.capturing || this.board.jumpPieces.length > 0) {
+    if (move.jumping) {
       this.jump(piece, x, y);
       this.board.tempCaptured.splice(0);
       this.board.jumpPieces.splice(0);
 
+      if (this.captureMove) {
+        this.captureMove.moves.push(ending);
+        this.captureMove.ending = ending;
+        this.captureMove.promoted = this.promoted;
+
+        console.log(this.captureMove);
+      } else {
+        this.captureMove = move;
+      }
+
       if (!this.promoted) {
-      // Check if the current piece can still capture
+        // Check if the current piece can still capture
         this.highlightAdditionalJumps(piece);
         if (this.board.highlights.length > 0) {
-          this.capturing = true;
+          this.jumping = true;
           this.inputting = true;
           this.draw();
           return;
         }
       }
 
-      this.capturing = false;
+      this.pushToMoveStack(this.captureMove);
+      this.captureMove = undefined;
+
+      this.jumping = false;
       this.promoted = false;
     } else {
       this.move(piece, x, y);
+      move.promoted = this.promoted;
+      this.pushToMoveStack(move);
     }
 
     this.board.playerTurn = !this.board.playerTurn;
@@ -355,8 +399,8 @@ class Checkers {
   }
 
   hasAvailableMoves(playerTurn: boolean): boolean {
-    const capturing = this.board.jumpPieces.length > 0;
-    if (capturing) {
+    const jumping = this.board.jumpPieces.length > 0;
+    if (jumping) {
       return true;
     } else {
       if (this.hasMoves(playerTurn))

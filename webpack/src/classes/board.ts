@@ -1,7 +1,9 @@
 import Piece from './piece';
 import Highlight from './highlight';
 
-import { GridState } from './types';
+import {
+  GridState, Move, Vector2d
+} from './types';
 
 class Board {
   private state = {
@@ -22,7 +24,7 @@ class Board {
   jumpPieces: Piece[] = [];
   tempCaptured: Piece[] = [];
 
-  constructor() {
+  constructor(fen?: string) {
     // Init Grid
     for (let r = 0; r < 8; r++) {
       this.grid.push([]);
@@ -30,6 +32,9 @@ class Board {
         this.grid[r].push(null);
       }
     }
+
+    if (!fen) return;
+    this.setBoard(fen);
   }
 
   setCell(x: number, y: number, val: GridState) {
@@ -154,6 +159,25 @@ class Board {
 
   getBoard(): string {
     return '';
+  }
+
+  convertVectorToPosition({ x, y, }: Vector2d): number {
+    return ((7 - y) << 2) + 3 - (x >> 1) + 1;
+  }
+
+  convertMoveToFen(move: Move): string {
+    const start = this.convertVectorToPosition(move.starting);
+    if (move.jumping) {
+      let notation = `${start}`;
+      for (const pos of move.moves) {
+        notation += 'x' + this.convertVectorToPosition(pos);
+      }
+      console.log(notation, move);
+      return notation;
+    }
+
+    const end = this.convertVectorToPosition(move.ending);
+    return start + '-' + end;
   }
 
   // Move Check

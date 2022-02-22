@@ -5,6 +5,28 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Checkers AI</title>
+    <style>
+      td,
+      th {
+        text-align: center;
+      }
+
+      td {
+        font-size: 16px;
+      }
+
+      tr:nth-child(odd) {
+        background-color: gainsboro;
+      }
+
+      tr:nth-child(event) {
+        background-color: lightgray;
+      }
+
+      table {
+        border-collapse: collapse;
+      }
+    </style>
   <link href="main.css" rel="stylesheet"></head>
   <body class="bg-gray-400">
     <div class="flex flex-col items-center">
@@ -18,7 +40,14 @@
           <div id="checkers"></div>
         </div>
 
-        <!-- <div class="bg-white w-80"></div> -->
+        <div class="w-80 bg-white border-2 border-black scroll-auto">
+          <table id="move-notation" class="w-full text-xl">
+            <thead>
+              <th class="h-12">White</th>
+              <th class="h-12">Black</th>
+            </thead>
+          </table>
+        </div>
       </div>
     </div>
   <script src="bundle.js"></script></body>
