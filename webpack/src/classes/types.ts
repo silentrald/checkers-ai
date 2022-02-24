@@ -9,10 +9,8 @@ export interface Vector2d {
 }
 
 export interface Move {
-    moves: Vector2d[];
-    starting: Vector2d;
-    ending: Vector2d;
+    moves: number[];
     notation?: string;
     jumping?: boolean;
-    promoted?: boolean;
+    promoting?: boolean;
 }

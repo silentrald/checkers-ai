@@ -1,17 +1,13 @@
 import Piece from './piece';
 import Highlight from './highlight';
 
-import {
-  GridState, Move, Vector2d
-} from './types';
+import { GridState, Move } from './types';
+import DIRECTIONS from '../config/directions';
 
 class Board {
-  private state = {
-    left: 0,
-    right: 0,
-    kings: 0,
-  };
-  grid: GridState[][] = [];
+  // grid: GridState[][] = [];
+  boardString: string[] = [];
+  board: GridState[] = [];
 
   // playerTurn: boolean = Math.random() > 0.5;
   playerTurn = true;
@@ -26,76 +22,45 @@ class Board {
 
   constructor(fen?: string) {
     // Init Grid
-    for (let r = 0; r < 8; r++) {
-      this.grid.push([]);
-      for (let c = 0; c < 8; c++) {
-        this.grid[r].push(null);
-      }
+    for (let i = 0; i < 32; i++) {
+      this.boardString.push('_');
+      this.board.push(null);
     }
 
     if (!fen) return;
     this.setBoard(fen);
   }
 
-  setCell(x: number, y: number, val: GridState) {
-    this.grid[x][y] = val;
+  setCell(position: number, val: GridState) {
+    this.board[position] = val;
 
-    let cell = -1;
+    let char = '_';
     if (val instanceof Piece) {
-      cell = +val.player + 1;
+      char = val.player ? 'p' : 'a';
+      if (val.king) char = char.toLocaleUpperCase();
     } else if (val instanceof Highlight) {
-      cell = 3;
-    } else { // null
-      cell = 0;
+      char = 'H';
     }
-
-    let offset = ((y << 2) + (x >> 1)) << 1;
-    let ref: 'left' | 'right' = 'right';
-    if (offset > 31) {
-      offset -= 32;
-      ref = 'left';
-    }
-
-    this.state[ref] = ((this.state[ref] & ~(0x3 << offset)) | (cell << offset)) >>> 0;
+    this.boardString[position] = char;
   }
 
-  getCell(x: number, y: number): GridState {
-    return this.grid[x][y];
-  }
-
-  setKing(x: number, y: number, king: boolean) {
-    const offset = (y << 2) + (x >> 1);
-    this.state.kings = (this.state.kings & ~(0x1 << offset) | (+king << offset)) >>> 0;
+  getCell(position: number): GridState {
+    return this.board[position];
   }
 
   getState(): string {
+    this.boardString.reverse();
     let state = '';
-    let cell: any;
-
-    for (let y = 0; y < 8; y++) {
-      for (let x = 0; x < 8; x++) {
-        if ((y & 1) === (x & 1)) {
-          state += '*';
-        } else {
-          cell = this.getCell(x, y);
-          if (cell instanceof Piece) {
-            if (cell.player) {
-              state += cell.king ? 'P' : 'p';
-            } else {
-              state += cell.king ? 'A' : 'a';
-            }
-          } else {
-            state += '_';
-          }
-        }
+    for (let i = 0; i < 8; i++) {
+      if (i & 1) {
+        state += this.boardString.slice(i * 4, i * 4 + 4).join('*') + '*\n';
+      } else {
+        state += '*' + this.boardString.slice(i * 4, i * 4 + 4).join('*') + '\n';
       }
-      state += '\n';
     }
-
+    this.boardString.reverse();
     return state + '-' + (this.playerTurn ? 'P' : 'A');
-    // return this.state.left.toString(16).padStart(8, '0') +
-    //   this.state.right.toString(16).padStart(8, '0') +
-    //   this.state.kings.toString(16).padStart(8, '0');
+    // return this.boardString.join('') + '-' + (this.playerTurn ? 'P' : 'A');
   }
 
   // W - Ai
@@ -117,413 +82,509 @@ class Board {
     ] = fen.split(':');
     this.playerTurn = turn === 'B';
 
-    let pos = 0, king = false;
+    let position = 0, king = false;
     for (const p of ais.slice(1).split(',')) {
       if (p[0] === 'K') {
-        pos = +p.slice(1) - 1;
+        position = +p.slice(1) - 1;
         king = true;
         this.aiKings++;
       } else {
-        pos = +p - 1;
+        position = +p - 1;
         king = false;
       }
 
-      const y = 7 - Math.floor(pos / 4);
-      const x = (3 - (pos % 4) << 1) + ((y + 1) & 1);
-      const piece = new Piece(x, y, false, king);
+      const piece = new Piece(position, false, king);
       this.aiPieces.push(piece);
-
-      this.setCell(x, y, piece);
-      this.setKing(x, y, king);
+      this.setCell(position, piece);
     }
 
     for (const p of players.slice(1).split(',')) {
       if (p[0] === 'K') {
-        pos = +p.slice(1) - 1;
+        position = +p.slice(1) - 1;
         king = true;
         this.playerKings++;
       } else {
-        pos = +p - 1;
+        position = +p - 1;
         king = false;
       }
 
-      const y = 7 - Math.floor(pos / 4);
-      const x = (3 - (pos % 4) << 1) + ((y + 1) & 1);
-      const piece = new Piece(x, y, true, king);
+      const piece = new Piece(position, true, king);
       this.playerPieces.push(piece);
-
-      this.setCell(x, y, piece);
-      this.setKing(x, y, king);
+      this.setCell(position, piece);
     }
   }
 
+  // TODO: Get the fen string
   getBoard(): string {
     return '';
   }
 
-  convertVectorToPosition({ x, y, }: Vector2d): number {
-    return ((7 - y) << 2) + 3 - (x >> 1) + 1;
+  getTopLeft(position: number): number {
+    return position + ((position >> 2) & 1 ? 4 : 5);
   }
 
-  convertMoveToFen(move: Move): string {
-    const start = this.convertVectorToPosition(move.starting);
-    if (move.jumping) {
-      let notation = `${start}`;
-      for (const pos of move.moves) {
-        notation += 'x' + this.convertVectorToPosition(pos);
-      }
-      console.log(notation, move);
-      return notation;
-    }
+  getTopRight(position: number): number {
+    return position + ((position >> 2) & 1 ? 3 : 4);
+  }
 
-    const end = this.convertVectorToPosition(move.ending);
-    return start + '-' + end;
+  getBottomLeft(position: number): number {
+    return position - ((position >> 2) & 1 ? 4 : 3);
+  }
+
+  getBottomRight(position: number): number {
+    return position - ((position >> 2) & 1 ? 5 : 4);
+  }
+
+  getMiddle(start: number, end: number): number {
+    return (start + end + ((start >> 2) & 1 ? -1 : 1)) >> 1;
+  }
+
+  getTopLeftJump(position: number): number {
+    return position + 9;
+  }
+
+  getTopRightJump(position: number): number {
+    return position + 7;
+  }
+
+  getBottomLeftJump(position: number): number {
+    return position - 7;
+  }
+
+  getBottomRightJump(position: number): number {
+    return position - 9;
   }
 
   // Move Check
-  isTopLeftEmpty(x: number, y: number): boolean {
-    return x > 0 && y > 0 && !this.grid[x - 1][y - 1];
+  isValidPosition(position: number): boolean {
+    return position > -1 && position < 32;
   }
 
-  isTopRightEmpty(x: number, y: number): boolean {
-    return x < 7 && y > 0 && !this.grid[x + 1][y - 1];
+  isTopEdge(position: number): boolean {
+    return position > 27;
   }
 
-  isBottomLeftEmpty(x: number, y: number): boolean {
-    return x > 0 && y < 7 && !this.grid[x - 1][y + 1];
+  isTopJumpEdge(position: number): boolean {
+    return position > 23;
   }
 
-  isBottomRightEmpty(x: number, y: number): boolean {
-    return x < 7 && y < 7 && !this.grid[x + 1][y + 1];
+  isBottomEdge(position: number): boolean {
+    return position < 4;
   }
 
-  // Capture Checks
-  isTopLeftJumpable(x: number, y: number, opponent: boolean): boolean {
-    if (x < 2 || y < 2) return false;
-
-    const cell = this.grid[x - 1][y - 1];
-    return cell instanceof Piece && cell.player === opponent && !this.grid[x - 2][y - 2];
+  isBottomJumpEdge(position: number): boolean {
+    return position < 8;
   }
 
-  isTopRightJumpable(x: number, y: number, opponent: boolean): boolean {
-    if (x > 5 || y < 2) return false;
-
-    const cell = this.grid[x + 1][y - 1];
-    return cell instanceof Piece && cell.player === opponent && !this.grid[x + 2][y - 2];
+  isLeftEdge(position: number): boolean {
+    return position % 8 === 3;
   }
 
-  isBottomLeftJumpable(x: number, y: number, opponent: boolean): boolean {
-    if (x < 2 || y > 5) return false;
-
-    const cell = this.grid[x - 1][y + 1];
-    return cell instanceof Piece && cell.player === opponent && !this.grid[x - 2][y + 2];
+  isLeftJumpEdge(position: number): boolean {
+    return position % 4 === 3;
   }
 
-  isBottomRightJumpable(x: number, y: number, opponent: boolean): boolean {
-    if (x > 5 || y > 5) return false;
+  isRightEdge(position: number): boolean {
+    return position % 8 === 4;
+  }
 
-    const cell = this.grid[x + 1][y + 1];
-    return cell instanceof Piece && cell.player === opponent && !this.grid[x + 2][y + 2];
+  isRightJumpEdge(position: number): boolean {
+    return position % 4 === 0;
+  }
+
+  isEmpty(position: number): boolean {
+    return !this.board[position];
+  }
+
+  // Move Checks
+  isMovable(start: number, direction: number): boolean {
+    if (!this.isValidPosition(start))
+      return false;
+
+    switch (direction) {
+    case DIRECTIONS.TOP_LEFT:
+      return !this.isTopEdge(start) && !this.isLeftEdge(start) &&
+        this.isEmpty(this.getTopLeft(start));
+    case DIRECTIONS.TOP_RIGHT:
+      return !this.isTopEdge(start) && !this.isRightEdge(start) &&
+        this.isEmpty(this.getTopRight(start));
+    case DIRECTIONS.BOTTOM_LEFT:
+      return !this.isBottomEdge(start) && !this.isLeftEdge(start) &&
+        this.isEmpty(this.getBottomLeft(start));
+    case DIRECTIONS.BOTTOM_RIGHT:
+      return !this.isBottomEdge(start) && !this.isRightEdge(start) &&
+        this.isEmpty(this.getBottomRight(start));
+    default:
+      console.error('Invalid direction value in isJumpable method');
+      return false;
+    }
+  }
+
+  isJumpable(start: number, direction: number, opponent: boolean): boolean {
+    if (!this.isValidPosition(start))
+      return false;
+
+    let end = 0;
+    switch (direction) {
+    case DIRECTIONS.TOP_LEFT:
+      if (this.isTopJumpEdge(start) || this.isLeftJumpEdge(start))
+        return false;
+      end = this.getTopLeftJump(start);
+      break;
+    case DIRECTIONS.TOP_RIGHT:
+      if (this.isTopJumpEdge(start) || this.isRightJumpEdge(start))
+        return false;
+      end = this.getTopRightJump(start);
+      break;
+    case DIRECTIONS.BOTTOM_LEFT:
+      if (this.isBottomJumpEdge(start) || this.isLeftJumpEdge(start))
+        return false;
+      end = this.getBottomLeftJump(start);
+      break;
+    case DIRECTIONS.BOTTOM_RIGHT:
+      if (this.isBottomJumpEdge(start) || this.isRightJumpEdge(start))
+        return false;
+      end = this.getBottomRightJump(start);
+      break;
+    default:
+      console.error('Invalid direction value in isJumpable method');
+      return false;
+    }
+
+    const mid = this.getMiddle(start, end);
+    const cell = this.board[mid];
+    return cell instanceof Piece && cell.player === opponent && !this.board[end];
   }
 
   // Move is not capturable
-  isCellOccupiedByPieceOrKing(x: number, y: number, player: boolean): boolean {
-    const cell = this.grid[x][y];
+  isOccupiedByPieceOrKing(position: number, player: boolean): boolean {
+    const cell = this.board[position];
     return cell instanceof Piece && cell.player === player;
   }
 
-  isCellOccupiedByKing(x: number, y: number, player: boolean): boolean {
-    const cell = this.grid[x][y];
+  isOccupiedByKing(position: number, player: boolean): boolean {
+    const cell = this.board[position];
     return cell instanceof Piece && cell.player === player && cell.king;
   }
 
   // Open Square for Pieces
-  isTopLeftPlayerPieceOpen(x: number, y: number): boolean {
-    if (!this.isTopLeftEmpty(x, y))
+  isTopLeftOpen(position: number, player: boolean): boolean {
+    const tl = this.getTopLeft(position);
+
+    if (!this.isValidPosition(tl) || !this.isEmpty(tl))
       return false;
 
-    x--; y--;
-
-    // Edge Cases
-    if (y === 0)
+    if (tl > 27)
       return true;
-    if (x === 0) // BUG: Did not consider jump cases
-      return this.isTopRightEmpty(x, y);
 
-    // Normal
-    const bl = this.isBottomLeftEmpty(x, y);
-    const tr = this.isTopRightEmpty(x, y);
-    return !(this.isCellOccupiedByPieceOrKing(x - 1, y - 1, false) || (
-      bl && this.isCellOccupiedByPieceOrKing(x + 1, y - 1, false) ||
-        tr && this.isCellOccupiedByKing(x - 1, y + 1, false)
-    ));
-  }
+    const trp = this.getTopRight(tl);
+    if (this.isLeftEdge(tl)) // x = 0 // BUG: Did not consider jump cases
+      return this.isEmpty(trp);
 
-  isTopRightPlayerPieceOpen(x: number, y: number): boolean {
-    if (!this.isTopRightEmpty(x, y))
-      return false;
-
-    x++; y--;
-
-    // Edge Cases
-    if (y === 0)
-      return true;
-    if (x === 7) // BUG: Did not consider jump cases
-      return this.isTopLeftEmpty(x, y);
-
-    const br = this.isBottomRightEmpty(x, y);
-    const tl = this.isTopLeftEmpty(x, y);
-    return !(this.isCellOccupiedByPieceOrKing(x + 1, y - 1, false) || (
-      br && this.isCellOccupiedByPieceOrKing(x - 1, y - 1, false) ||
-        tl && this.isCellOccupiedByKing(x + 1, y + 1, false)
-    ));
-  }
-
-  isBottomLeftAiPieceOpen(x: number, y: number): boolean {
-    if (!this.isBottomLeftEmpty(x, y))
-      return false;
-
-    x--; y++;
-
-    // Edge Cases
-    if (y === 7)
-      return true;
-    if (x === 0) // BUG: Did not consider jump cases
-      return this.isBottomRightEmpty(x, y);
-
-    // Normal
-    const br = this.isBottomRightEmpty(x, y);
-    const tl = this.isTopLeftEmpty(x, y);
-    return !(this.isCellOccupiedByPieceOrKing(x - 1, y + 1, true) || (
-      br && this.isCellOccupiedByKing(x - 1, y - 1, true) ||
-        tl && this.isCellOccupiedByPieceOrKing(x + 1, y + 1, true)
-    ));
-  }
-
-  isBottomRightAiPieceOpen(x: number, y: number): boolean {
-    if (!this.isBottomRightEmpty(x, y))
-      return false;
-
-    x++; y++;
-
-    // Edge Cases
-    if (y === 7)
-      return true;
-    if (x === 7) // BUG: Did not consider jump cases
-      return this.isBottomLeftEmpty(x, y);
-
-    // Normal
-    const bl = this.isBottomLeftEmpty(x, y);
-    const tr = this.isTopRightEmpty(x, y);
-    return !(this.isCellOccupiedByPieceOrKing(x - 1, y + 1, true) || (
-      bl && this.isCellOccupiedByKing(x + 1, y - 1, true) ||
-        tr && this.isCellOccupiedByPieceOrKing(x - 1, y + 1, true)
-    ));
-  }
-
-  isRunaway(x: number, y: number, player: boolean): boolean {
+    const blp = this.getBottomLeft(tl);
     if (player) {
-      if (y === 0)
+      return !(this.isOccupiedByPieceOrKing(this.getTopLeft(tl), false) || (
+        this.isEmpty(blp) && this.isOccupiedByPieceOrKing(trp, false) ||
+        this.isEmpty(trp) && this.isOccupiedByKing(blp, false)
+      ));
+    }
+
+    return !(this.isOccupiedByKing(this.getTopLeft(tl), true) || (
+      this.isEmpty(blp) && this.isOccupiedByKing(trp, true) ||
+      this.isEmpty(trp) && this.isOccupiedByPieceOrKing(blp, true)
+    ));
+  }
+
+  isTopRightOpen(position: number, player: boolean): boolean {
+    const tr = this.getTopRight(position);
+
+    // Top right check
+    if (!this.isValidPosition(tr) || !this.isEmpty(tr))
+      return false;
+    if (tr > 27)
+      return true;
+
+    const tlp = this.getTopLeft(tr);
+    if (this.isRightEdge(tr)) // x == 7 // BUG: Did not consider jump cases
+      return this.isEmpty(tlp);
+
+    const brp = this.getBottomRight(tr);
+    if (player) {
+      return !(this.isOccupiedByPieceOrKing(this.getTopRight(tr), false) || (
+        this.isEmpty(brp) && this.isOccupiedByPieceOrKing(tlp, false) ||
+        this.isEmpty(tlp) && this.isOccupiedByKing(brp, false)
+      ));
+    }
+
+    return !(this.isOccupiedByKing(this.getTopRight(tr), true) || (
+      this.isEmpty(brp) && this.isOccupiedByKing(tlp, true) ||
+      this.isEmpty(tlp) && this.isOccupiedByPieceOrKing(brp, true)
+    ));
+  }
+
+  isBottomLeftOpen(position: number, player: boolean): boolean {
+    const bl = this.getBottomLeft(position);
+
+    if (!this.isValidPosition(bl) || !this.isEmpty(bl))
+      return false;
+    if (this.isBottomEdge(bl))
+      return true;
+
+    const brp = this.getBottomRight(bl);
+    if (this.isLeftEdge(bl))
+      return this.isEmpty(brp);
+
+    const tlp = this.getTopLeft(bl);
+    if (player) {
+      return !(this.isOccupiedByKing(this.getBottomLeft(bl), false) || (
+        this.isEmpty(brp) && this.isOccupiedByPieceOrKing(tlp, false) ||
+        this.isEmpty(tlp) && this.isOccupiedByKing(brp, false)
+      ));
+    }
+
+    return !(this.isOccupiedByPieceOrKing(this.getBottomLeft(bl), true) || (
+      this.isEmpty(brp) && this.isOccupiedByKing(tlp, true) ||
+      this.isEmpty(tlp) && this.isOccupiedByPieceOrKing(brp, true)
+    ));
+  }
+
+  isBottomRightOpen(position: number, player: boolean): boolean {
+    const br = this.getBottomRight(position);
+
+    if (!this.isValidPosition(br) || !this.isEmpty(br))
+      return false;
+    if (this.isBottomEdge(br))
+      return true;
+
+    const blp = this.getBottomLeft(br);
+    if (this.isRightEdge(br))
+      return this.isEmpty(blp);
+
+    const trp = this.getTopRight(br);
+    if (player) {
+      return !(this.isOccupiedByKing(this.getBottomRight(br), false) || (
+        this.isEmpty(blp) && this.isOccupiedByPieceOrKing(trp, false) ||
+        this.isEmpty(trp) && this.isOccupiedByKing(blp, false)
+      ));
+    }
+
+    return !(this.isOccupiedByPieceOrKing(this.getBottomRight(br), true) || (
+      this.isEmpty(blp) && this.isOccupiedByKing(trp, true) ||
+      this.isEmpty(trp) && this.isOccupiedByPieceOrKing(blp, true)
+    ));
+  }
+
+  isRunaway(position: number, player: boolean): boolean {
+    if (player) {
+      if (position > 27)
         return true;
 
-      if (this.isTopLeftPlayerPieceOpen(x, y))
-        return this.isRunaway(x - 1, y - 1, player);
-      if (this.isTopRightPlayerPieceOpen(x, y))
-        return this.isRunaway(x + 1, y - 1, player);
+      if (this.isTopLeftOpen(position, player))
+        return this.isRunaway(this.getTopLeft(position), player);
+      if (this.isTopRightOpen(position, player))
+        return this.isRunaway(this.getTopRight(position), player);
     } else {
-      if (y === 7)
+      if (position < 4)
         return true;
 
-      if (this.isBottomLeftAiPieceOpen(x, y))
-        return this.isRunaway(x - 1, y + 1, player);
-      if (this.isBottomRightAiPieceOpen(x, y))
-        return this.isRunaway(x + 1, y + 1, player);
+      if (this.isBottomLeftOpen(position, player))
+        return this.isRunaway(this.getBottomLeft(position), player);
+      if (this.isBottomRightOpen(position, player))
+        return this.isRunaway(this.getBottomRight(position), player);
     }
 
     return false;
   }
 
-  // Open Square for Kings
-  isTopLeftKingOpen(x: number, y: number, player: boolean): boolean {
-    if (!this.isTopLeftEmpty(x, y))
-      return false;
-
-    x--; y--;
-
-    const bl = this.isBottomLeftEmpty(x, y);
-    const tr = this.isTopRightEmpty(x, y);
-    if (player) {
-      return !(this.isCellOccupiedByPieceOrKing(x - 1, y - 1, false) || (
-        bl && this.isCellOccupiedByPieceOrKing(x + 1, y - 1, false) ||
-          tr && this.isCellOccupiedByKing(x - 1, y + 1, false)
-      ));
-    } else {
-      return !(this.isCellOccupiedByKing(x - 1, y - 1, true) || (
-        bl && this.isCellOccupiedByKing(x + 1, y - 1, true) ||
-          tr && this.isCellOccupiedByPieceOrKing(x - 1, y + 1, true)
-      ));
-    }
-  }
-
-  isTopRightKingOpen(x: number, y: number, player: boolean): boolean {
-    if (!this.isTopRightEmpty(x, y))
-      return false;
-
-    x++; y--;
-
-    // Edge Cases
-    if (y === 0)
-      return true;
-    if (x === 7) // BUG: Did not consider jump cases
-      return this.isTopLeftEmpty(x, y);
-
-    const br = this.isBottomRightEmpty(x, y);
-    const tl = this.isTopLeftEmpty(x, y);
-    if (player) {
-      return !(this.isCellOccupiedByPieceOrKing(x + 1, y - 1, false) || (
-        br && this.isCellOccupiedByPieceOrKing(x - 1, y - 1, false) ||
-        tl && this.isCellOccupiedByKing(x + 1, y + 1, false)
-      ));
-    } else {
-      return !(this.isCellOccupiedByKing(x + 1, y - 1, true) || (
-        br && this.isCellOccupiedByKing(x - 1, y - 1, true) ||
-        tl && this.isCellOccupiedByPieceOrKing(x + 1, y + 1, true)
-      ));
-    }
-  }
-
-  isBottomLeftKingOpen(x: number, y: number, player: boolean): boolean {
-    if (!this.isBottomLeftEmpty(x, y))
-      return false;
-
-    x--; y++;
-
-    // Edge Cases
-    if (y === 7)
-      return true;
-    if (x === 0) // BUG: Did not consider jump cases
-      return this.isBottomRightEmpty(x, y);
-
-    // Normal
-    const br = this.isBottomRightEmpty(x, y);
-    const tl = this.isTopLeftEmpty(x, y);
-    if (player) {
-      return !(this.isCellOccupiedByKing(x - 1, y + 1, false) || (
-        br && this.isCellOccupiedByPieceOrKing(x - 1, y - 1, false) ||
-        tl && this.isCellOccupiedByKing(x + 1, y + 1, false)
-      ));
-    } else {
-      return !(this.isCellOccupiedByPieceOrKing(x - 1, y + 1, true) || (
-        br && this.isCellOccupiedByKing(x - 1, y - 1, true) ||
-        tl && this.isCellOccupiedByPieceOrKing(x + 1, y + 1, true)
-      ));
-    }
-  }
-
-  isBottomRightKingOpen(x: number, y: number, player: boolean): boolean {
-    if (!this.isBottomRightEmpty(x, y))
-      return false;
-
-    x++; y++;
-
-    // Edge Cases
-    if (y === 7)
-      return true;
-    if (x === 7) // BUG: Did not consider jump cases
-      return this.isBottomLeftEmpty(x, y);
-
-    // Normal
-    const bl = this.isBottomLeftEmpty(x, y);
-    const tr = this.isTopRightEmpty(x, y);
-    if (player) {
-      return !(this.isCellOccupiedByKing(x - 1, y + 1, false) || (
-        bl && this.isCellOccupiedByPieceOrKing(x + 1, y - 1, false) ||
-        tr && this.isCellOccupiedByKing(x - 1, y + 1, false)
-      ));
-    } else {
-      return !(this.isCellOccupiedByPieceOrKing(x - 1, y + 1, true) || (
-        bl && this.isCellOccupiedByKing(x + 1, y - 1, true) ||
-          tr && this.isCellOccupiedByPieceOrKing(x - 1, y + 1, true)
-      ));
-
-    }
-  }
-
-  isKingTrapped(x: number, y: number, player: boolean): boolean {
-    const top = y === 0;
-    const bot = y === 7;
-    const left = x === 0;
-    const right = x === 7;
+  isKingTrapped(position: number, player: boolean): boolean {
+    const top = this.isTopEdge(position);
+    const bot = this.isBottomEdge(position);
+    const left = this.isLeftEdge(position);
+    const right = this.isRightEdge(position);
 
     // Corner Checks
     if (bot && left)
-      return !this.isTopRightKingOpen(x, y, player);
+      return !this.isTopRightOpen(position, player);
     if (top && right)
-      return !this.isBottomLeftKingOpen(x, y, player);
+      return !this.isBottomLeftOpen(position, player);
 
     // Edge
     if (top) {
-      if (x === 1) { // Double Corner
-        return !(this.isBottomRightKingOpen(x, y, player) &&
-          (this.grid[0][1] ? true : this.isBottomRightKingOpen(0, 1, player)));
-      }
+      if (position === 31) // Double Corner 31,27
+        return !(this.isBottomRightOpen(31, player) &&
+        (this.board[27] ? true : this.isBottomRightOpen(27, player)));
 
-      return !(this.isBottomLeftKingOpen(x, y, player) || this.isBottomRightKingOpen(x, y, player));
+      return !(this.isBottomLeftOpen(position, player) || this.isBottomRightOpen(position, player));
     }
     if (left) {
-      if (y === 1) { // Double Corner
-        return !(this.isBottomRightKingOpen(x, y, player) &&
-          (this.grid[1][0] ? true : this.isBottomRightKingOpen(0, 1, player)));
+      if (position === 27) { // Double Corner 31,27
+        return !(this.isBottomRightOpen(27, player) &&
+          (this.board[31] ? true : this.isBottomRightOpen(31, player)));
       }
 
-      return !(this.isTopRightKingOpen(x, y, player) || this.isBottomRightKingOpen(x, y, player));
+      return !(this.isTopRightOpen(position, player) || this.isBottomRightOpen(position, player));
     }
     if (bot) {
-      if (x === 6) { // Double Corner
-        return !(this.isTopLeftKingOpen(x, y, player) &&
-          (this.grid[7][6] ? true : this.isTopLeftKingOpen(7, 6, player)));
+      if (position === 0) { // Double Corner 0,4
+        return !(this.isTopLeftOpen(0, player) &&
+          (this.board[4] ? true : this.isTopLeftOpen(4, player)));
       }
-      return !(this.isTopLeftKingOpen(x, y, player) || this.isTopRightKingOpen(x, y, player));
+      return !(this.isTopLeftOpen(position, player) || this.isTopRightOpen(position, player));
     }
     if (right) {
-      if (y === 6) { // Double Corner
-        return !(this.isTopLeftKingOpen(x, y, player) &&
-          (this.grid[6][7] ? true : this.isTopLeftKingOpen(6, 7, player)));
+      if (position === 4) { // Double Corner 0,4
+        return !(this.isTopLeftOpen(4, player) &&
+          (this.board[0] ? true : this.isTopLeftOpen(0, player)));
       }
-      return !(this.isTopLeftKingOpen(x, y, player) || this.isBottomLeftKingOpen(x, y, player));
+      return !(this.isTopLeftOpen(position, player) || this.isBottomLeftOpen(position, player));
     }
 
     // TODO: Check this if there is something wrong with the logic
-    if (x === 1 || x === 6 || y === 1 || y === 6) return false;
+    // if (x === 1 || x === 6 || y === 1 || y === 6) return false;
 
     // Center Trap
     return !(
-      this.isTopLeftKingOpen(x, y, player) ||
-      this.isTopRightKingOpen(x, y, player) ||
-      this.isBottomLeftKingOpen(x, y, player) ||
-      this.isBottomRightKingOpen(x, y, player)
+      this.isTopLeftOpen(position, player) ||
+      this.isTopRightOpen(position, player) ||
+      this.isBottomLeftOpen(position, player) ||
+      this.isBottomRightOpen(position, player)
     );
   }
 
-  isPieceTrapped(x: number, y: number, player: boolean): boolean {
-    const left = x === 0;
-    const right = x === 7;
-
+  isPieceTrapped(position: number, player: boolean): boolean {
     if (player) {
-      if (left)
-        return this.isTopRightPlayerPieceOpen(x, y);
-      if (right)
-        return this.isTopLeftPlayerPieceOpen(x,y);
-      return this.isTopLeftPlayerPieceOpen(x, y) || this.isTopRightPlayerPieceOpen(x, y);
-    } else {
-      if (left)
-        return this.isBottomLeftAiPieceOpen(x, y);
-      if (right)
-        return this.isBottomRightAiPieceOpen(x, y);
-      return this.isBottomLeftAiPieceOpen(x, y) || this.isBottomRightAiPieceOpen(x, y);
+      if (this.isLeftEdge(position))
+        return this.isTopRightOpen(position, player);
+      if (this.isRightEdge(position))
+        return this.isTopLeftOpen(position, player);
+      return this.isTopLeftOpen(position, player) || this.isTopRightOpen(position, player);
     }
 
-    return false;
+    if (this.isLeftEdge(position))
+      return this.isBottomLeftOpen(position, player);
+    if (this.isRightEdge(position))
+      return this.isBottomRightOpen(position, player);
+    return this.isBottomLeftOpen(position, player) || this.isBottomRightOpen(position, player);
+  }
+
+  // Methods
+  promote(piece: Piece, promoting: boolean) {
+    if (piece.king) return;
+
+    if (promoting) {
+      piece.king = true;
+      if (piece.player) {
+        this.playerKings++;
+      } else {
+        this.aiKings++;
+      }
+    }
+  }
+
+  move(move: Move) {
+    const [ start, end ] = move.moves;
+
+    const piece = this.getCell(start) as Piece;
+    this.promote(piece, !!move.promoting);
+
+    piece.setPosition(end);
+    this.setCell(start, null);
+    this.setCell(end, piece);
+  }
+
+  jump(move: Move) {
+    const [ start, ...positions ] = move.moves;
+
+    // Move Current Piece
+    const piece = this.getCell(start) as Piece;
+    const end = positions[positions.length - 1];
+    this.promote(piece, !!move.promoting);
+
+    piece.setPosition(end);
+    this.setCell(start, null);
+    this.setCell(end, piece);
+
+    // Remove Captured Pieces
+    let current = start;
+    for (const pos of positions) {
+      current = this.getMiddle(current, pos);
+
+      const captured = this.getCell(current) as Piece;
+      this.tempCaptured.push(captured);
+      if (captured.player) {
+        this.playerPieces.splice(this.playerPieces.indexOf(captured), 1);
+        if (captured.king)
+          this.playerKings--;
+      } else {
+        this.aiPieces.splice(this.aiPieces.indexOf(captured), 1);
+        if (captured.king)
+          this.aiKings--;
+      }
+
+      this.setCell(current, null);
+      current = pos;
+    }
+  }
+
+  demote(piece: Piece, promoting: boolean) {
+    if (promoting) {
+      piece.king = false;
+      if (piece.player) {
+        this.playerKings--;
+      } else {
+        this.aiKings--;
+      }
+    }
+  }
+
+  reverseMove(move: Move) {
+    const [ start, end ] = move.moves;
+
+    const piece = this.getCell(end) as Piece;
+    this.demote(piece, !!move.promoting);
+
+    piece.setPosition(start);
+    this.setCell(end, null);
+    this.setCell(start, piece);
+  }
+
+  reverseJump(move: Move) {
+    const start = move.moves[0];
+
+    move.moves.reverse();
+    const [ end, ...positions ] = move.moves;
+
+    // Move Current Piece
+    const piece = this.getCell(end) as Piece;
+    if (!piece) {
+      console.log(this.getState(), move.moves, piece);
+    }
+    this.demote(piece, !!move.promoting);
+    piece.setPosition(start);
+    this.setCell(end, null);
+    this.setCell(start, piece);
+
+    // Remove Captured Pieces
+    let current = end;
+    for (const pos of positions) {
+      current = this.getMiddle(current, pos);
+
+      const captured = this.tempCaptured.pop() as Piece;
+      if (captured.player) {
+        this.playerPieces.push(captured);
+        if (captured.king)
+          this.playerKings++;
+      } else {
+        this.aiPieces.push(captured);
+        if (captured.king)
+          this.aiKings++;
+      }
+
+      this.setCell(current, captured);
+      current = pos;
+    }
+
+    move.moves.reverse();
   }
 }
 

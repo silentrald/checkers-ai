@@ -18,24 +18,24 @@ class Heuristic {
   /* eslint-disable */
   // Mid Game Position Factors
   midGamePositionFactors = [
-    [ 0, 4, 0, 4, 0, 4, 0, 4 ],
-    [ 4, 0, 3, 0, 3, 0, 3, 0 ],
-    [ 0, 3, 0, 2, 0, 2, 0, 4 ],
-    [ 4, 0, 2, 0, 1, 0, 3, 0 ],
-    [ 0, 3, 0, 1, 0, 2, 0, 4 ],
-    [ 4, 0, 2, 0, 2, 0, 3, 0 ],
-    [ 0, 3, 0, 3, 0, 3, 0, 4 ],
-    [ 4, 0, 4, 0, 4, 0, 4, 0 ]
+    4, 4, 4, 4,
+    4, 3, 3, 3,
+    3, 2, 2, 4,
+    4, 2, 1, 3,
+    3, 1, 2, 4,
+    4, 2, 2, 3,
+    3, 3, 3, 4,
+    4, 4, 4, 4
   ];
   endGamePositionFactors = [
-    [ 0, 6, 0, 8, 0, 2, 0, 1 ],
-    [ 6, 0, 2, 0, 7, 0, 3, 0 ],
-    [ 0, 2, 0, 9, 0, 5, 0, 2 ],
-    [ 1, 0, 9, 0, 9, 0, 3, 0 ],
-    [ 0, 3, 0, 9, 0, 9, 0, 1 ],
-    [ 2, 0, 5, 0, 9, 0, 2, 0 ],
-    [ 0, 3, 0, 7, 0, 2, 0, 6 ],
-    [ 1, 0, 2, 0, 8, 0, 6, 0 ]
+    6, 8, 2, 1,
+    6, 2, 7, 3,
+    2, 9, 5, 2,
+    1, 9, 9, 3,
+    3, 9, 9, 1,
+    2, 5, 9, 2,
+    3, 7, 2, 6,
+    1, 2, 8, 6
   ];
   /* eslint-enable */
 
@@ -60,24 +60,22 @@ class Heuristic {
     switch (this.checkers.state) {
     case STATES.MID:
       for (const piece of this.board.playerPieces) {
-        const { x, y, } = piece.position;
-        score += this.midGamePositionFactors[y][x]; // Positional
+        score += this.midGamePositionFactors[piece.position]; // Positional
         if (piece.king) { // Check for trapped king
-          if (this.board.isKingTrapped(x, y, piece.player))
+          if (this.board.isKingTrapped(piece.position, piece.player))
             score += this.trapKingFactor;
         } else { // Check for runaway piece
-          if (this.board.isRunaway(x, y, piece.player))
+          if (this.board.isRunaway(piece.position, piece.player))
             score -= this.runawayFactor;
         }
       }
       for (const piece of this.board.aiPieces) {
-        const { x, y, } = piece.position;
-        score -= this.midGamePositionFactors[y][x]; // Positional
+        score -= this.midGamePositionFactors[piece.position]; // Positional
         if (piece.king) { // Check for trapped king
-          if (this.board.isKingTrapped(x, y, piece.player))
+          if (this.board.isKingTrapped(piece.position, piece.player))
             score -= this.trapKingFactor;
         } else { // Check for runaway piece
-          if (this.board.isRunaway(x, y, piece.player))
+          if (this.board.isRunaway(piece.position, piece.player))
             score += this.runawayFactor;
         }
       }
@@ -85,12 +83,10 @@ class Heuristic {
     case STATES.END:
       //** Positional */
       for (const piece of this.board.playerPieces) {
-        const { x, y, } = piece.position;
-        score += this.endGamePositionFactors[y][x];
+        score += this.endGamePositionFactors[piece.position];
       }
       for (const piece of this.board.aiPieces) {
-        const { x, y, } = piece.position;
-        score -= this.endGamePositionFactors[y][x];
+        score -= this.endGamePositionFactors[piece.position];
       }
 
       // Distance to from corner edge
@@ -115,11 +111,11 @@ class Heuristic {
       // }
 
       // Sum of distances
-      for (const { position: pPos, } of this.board.playerPieces) {
-        for (const { position: aPos, } of this.board.aiPieces) {
-          score += (14 - (Math.abs(pPos.x - aPos.x) + Math.abs(pPos.y - aPos.y))) * 3;
-        }
-      }
+      // for (const { position: pPos, } of this.board.playerPieces) {
+      //   for (const { position: aPos, } of this.board.aiPieces) {
+      //     score += (14 - (Math.abs(pPos.x - aPos.x) + Math.abs(pPos.y - aPos.y))) * 3;
+      //   }
+      // }
 
       // Farthest Distance
       // tmp = 0;
@@ -132,22 +128,20 @@ class Heuristic {
 
       // Trapped Pieces
       for (const piece of this.board.playerPieces) {
-        const { x, y, } = piece.position;
         if (piece.king) {
-          if (this.board.isKingTrapped(x, y, piece.player))
+          if (this.board.isKingTrapped(piece.position, piece.player))
             score += this.trapFactor;
         } else {
-          if (this.board.isPieceTrapped(x, y, piece.player))
+          if (this.board.isPieceTrapped(piece.position, piece.player))
             score += this.trapFactor;
         }
       }
       for (const piece of this.board.aiPieces) {
-        const { x, y, } = piece.position;
         if (piece.king) {
-          if (this.board.isKingTrapped(x, y, piece.player))
+          if (this.board.isKingTrapped(piece.position, piece.player))
             score -= this.trapFactor;
         } else {
-          if (this.board.isPieceTrapped(x, y, piece.player))
+          if (this.board.isPieceTrapped(piece.position, piece.player))
             score -= this.trapFactor;
         }
       }

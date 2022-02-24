@@ -9,6 +9,7 @@ import { Move } from './types';
 import COLORS from '../config/colors';
 import { OUTLINE_SIZE, TILE_SIZE } from '../config/values';
 import STATES from '../config/states';
+import DIRECTIONS from '../config/directions';
 
 class Checkers {
   board: Board;
@@ -20,7 +21,7 @@ class Checkers {
   inputting = true;
   jumping = false;
   promoted = false;
-  state = STATES.MID;
+  state = STATES.START;
 
   moveStack: Move[] = [];
   captureMove: Move | undefined;
@@ -60,74 +61,74 @@ class Checkers {
 
   // Highlights
   resetHighlights() {
-    for (const highlight of this.board.highlights) {
-      const { x, y, } = highlight.position;
-      this.board.setCell(x, y, null);
+    for (const { position, } of this.board.highlights) {
+      this.board.setCell(position, null);
     }
     this.board.highlights.splice(0);
   }
 
-  addHighlight(x: number, y: number) {
-    const highlight = new Highlight(x, y);
+  addHighlight(position: number) {
+    const highlight = new Highlight(position);
     this.board.highlights.push(highlight);
-    this.board.setCell(x, y, highlight);
+    this.board.setCell(position, highlight);
   }
 
   highlightPlayerMoves(piece: Piece) {
     if (!piece.player) return;
 
-    const { x, y, } = piece.position;
     this.board.selectedPiece = piece;
     this.resetHighlights();
 
     // Mandatory Jumps
     if (this.board.jumpPieces.length > 0) {
       if (piece.king) {
-        if (this.board.isBottomLeftJumpable(x, y, false))
-          this.addHighlight(x - 2, y + 2);
-        if (this.board.isBottomRightJumpable(x, y, false))
-          this.addHighlight(x + 2, y + 2);
+        if (this.board.isJumpable(piece.position, DIRECTIONS.BOTTOM_LEFT, false))
+          this.addHighlight(this.board.getBottomLeftJump(piece.position));
+        if (this.board.isJumpable(piece.position, DIRECTIONS.BOTTOM_RIGHT, false))
+          this.addHighlight(this.board.getBottomRightJump(piece.position));
       }
 
-      if (this.board.isTopLeftJumpable(x, y, false))
-        this.addHighlight(x - 2, y - 2);
-      if (this.board.isTopRightJumpable(x, y, false))
-        this.addHighlight(x + 2, y - 2);
+      if (this.board.isJumpable(piece.position, DIRECTIONS.TOP_LEFT, false))
+        this.addHighlight(this.board.getTopLeftJump(piece.position));
+      if (this.board.isJumpable(piece.position, DIRECTIONS.TOP_RIGHT, false))
+        this.addHighlight(this.board.getTopRightJump(piece.position));
     } else { // Normal Move
       if (piece.king) {
-        if (this.board.isBottomLeftEmpty(x, y))
-          this.addHighlight(x - 1, y + 1);
-        if (this.board.isBottomRightEmpty(x, y))
-          this.addHighlight(x + 1, y + 1);
+        if (this.board.isMovable(piece.position, DIRECTIONS.BOTTOM_LEFT))
+          this.addHighlight(this.board.getBottomLeft(piece.position));
+        if (this.board.isMovable(piece.position, DIRECTIONS.BOTTOM_RIGHT))
+          this.addHighlight(this.board.getBottomRight(piece.position));
       }
 
-      if (this.board.isTopLeftEmpty(x, y))
-        this.addHighlight(x - 1, y - 1);
-      if (this.board.isTopRightEmpty(x, y))
-        this.addHighlight(x + 1, y - 1);
+      if (this.board.isMovable(piece.position, DIRECTIONS.TOP_LEFT))
+        this.addHighlight(this.board.getTopLeft(piece.position));
+      if (this.board.isMovable(piece.position, DIRECTIONS.TOP_RIGHT))
+        this.addHighlight(this.board.getTopRight(piece.position));
     }
 
     this.draw();
   }
 
   highlightAdditionalJumps(piece: Piece) {
-    const { x, y, } = piece.position;
-
-    if (piece.king) {
-      if (this.board.isBottomLeftJumpable(x, y, false))
-        this.addHighlight(x - 2, y + 2);
-      if (this.board.isBottomRightJumpable(x, y, false))
-        this.addHighlight(x + 2, y + 2);
+    if (piece.king && !this.board.isBottomEdge(piece.position)) {
+      if (this.board.isJumpable(piece.position, DIRECTIONS.BOTTOM_LEFT, false))
+        this.addHighlight(this.board.getBottomLeftJump(piece.position));
+      if (this.board.isJumpable(piece.position, DIRECTIONS.BOTTOM_RIGHT, false))
+        this.addHighlight(this.board.getBottomRightJump(piece.position));
     }
 
-    if (this.board.isTopLeftJumpable(x, y, false))
-      this.addHighlight(x - 2, y - 2);
-    if (this.board.isTopRightJumpable(x, y, false))
-      this.addHighlight(x + 2, y - 2);
+    if (this.board.isJumpable(piece.position, DIRECTIONS.TOP_LEFT, false))
+      this.addHighlight(this.board.getTopLeftJump(piece.position));
+    if (this.board.isJumpable(piece.position, DIRECTIONS.TOP_RIGHT, false))
+      this.addHighlight(this.board.getTopRightJump(piece.position));
+  }
+
+  addNotationToMove(move: Move) {
+    move.notation = move.moves.map((val) => val + 1).join(move.jumping ? 'x' : '-');
   }
 
   pushToMoveStack(move: Move) {
-    move.notation = this.board.convertMoveToFen(move);
+    this.addNotationToMove(move);
 
     const table = document.getElementById('move-notation')! as HTMLTableElement;
     const moves = this.moveStack.length >> 1;
@@ -139,40 +140,30 @@ class Checkers {
   }
 
   // Piece Movement
-  handlePlayerMove(x: number, y: number) {
+  handlePlayerMove(position: number) {
     this.inputting = false; // block inputs
     this.resetHighlights();
 
-    const ending = {
-      x,
-      y,
-    };
     const piece = this.board.selectedPiece!;
     const move: Move = {
-      starting: {
-        ...piece.position,
-      },
-      ending,
-      moves: [ ending ],
+      moves: [ piece.position, position ],
       jumping: this.jumping || this.board.jumpPieces.length > 0,
+      promoting: !piece.king && this.board.isTopEdge(position),
     };
 
     if (move.jumping) {
-      this.jump(piece, x, y);
+      this.board.jump(move);
       this.board.tempCaptured.splice(0);
       this.board.jumpPieces.splice(0);
 
       if (this.captureMove) {
-        this.captureMove.moves.push(ending);
-        this.captureMove.ending = ending;
-        this.captureMove.promoted = this.promoted;
-
-        console.log(this.captureMove);
+        this.captureMove.moves.push(position);
+        this.captureMove.promoting = move.promoting;
       } else {
         this.captureMove = move;
       }
 
-      if (!this.promoted) {
+      if (!move.promoting) {
         // Check if the current piece can still capture
         this.highlightAdditionalJumps(piece);
         if (this.board.highlights.length > 0) {
@@ -189,137 +180,15 @@ class Checkers {
       this.jumping = false;
       this.promoted = false;
     } else {
-      this.move(piece, x, y);
-      move.promoted = this.promoted;
+      this.board.move(move);
       this.pushToMoveStack(move);
     }
 
-    this.board.playerTurn = !this.board.playerTurn;
+    this.board.playerTurn = false;
     this.board.selectedPiece = null;
     this.draw();
 
     this.passToAi();
-  }
-
-  promoteToKing(piece: Piece) {
-    if (piece.king) return;
-
-    const { x, y, } = piece.position;
-
-    if (!piece.king) {
-      if (piece.player) {
-        if (y === 0) {
-          piece.king = true;
-          this.promoted = true;
-          this.board.playerKings++;
-          this.board.setKing(x, y, true);
-        }
-      } else {
-        if (y === 7) {
-          piece.king = true;
-          this.promoted = true;
-          this.board.aiKings++;
-          this.board.setKing(x, y, true);
-        }
-      }
-    }
-  }
-
-  demoteKing(piece: Piece) {
-    const { x, y, } = piece.position;
-    if (this.promoted && piece.king) {
-      this.promoted = false;
-      piece.king = false;
-      this.board.setKing(x, y, false);
-      if (piece.player) {
-        this.board.playerKings--;
-      } else {
-        this.board.aiKings--;
-      }
-    }
-  }
-
-  private _move(piece: Piece, x: number, y: number) {
-    const { position: pos, } = piece;
-
-    // Update the grid
-    this.board.setCell(x, y, piece);
-    this.board.setCell(pos.x, pos.y, null);
-
-    // Move king value
-    if (piece.king) {
-      this.board.setKing(x, y, true);
-      this.board.setKing(pos.x, pos.y, false);
-    }
-
-    // Update the piece
-    piece.setPosition(x, y);
-  }
-
-  move(piece: Piece, x: number, y: number) {
-    this._move(piece, x, y);
-    this.promoteToKing(piece);
-  }
-
-  reverseMove(piece: Piece, x: number, y: number) {
-    this.demoteKing(piece);
-    this._move(piece, x, y);
-  }
-
-  jump(piece: Piece, x: number, y: number) {
-    const { position: pos, } = piece;
-
-    // Get the center piece and delete it
-    const capX = Math.abs(pos.x + x) >> 1;
-    const capY = Math.abs(pos.y + y) >> 1;
-    const captured = this.board.getCell(capX, capY) as Piece;
-    this.board.setCell(capX, capY, null);
-    this.board.tempCaptured.push(captured);
-
-    // Move the piece
-    this._move(piece, x, y);
-
-    if (captured.player) {
-      this.board.playerPieces.splice(this.board.playerPieces.indexOf(captured), 1);
-      if (captured.king) {
-        this.board.playerKings--;
-        this.board.setKing(capX, capY, false);
-      }
-    } else {
-      this.board.aiPieces.splice(this.board.aiPieces.indexOf(captured), 1);
-      if (captured.king) {
-        this.board.aiKings--;
-        this.board.setKing(capX, capY, false);
-      }
-    }
-    this.promoteToKing(piece);
-  }
-
-  reverseJump(piece: Piece, x: number, y: number) {
-    this.demoteKing(piece);
-
-    // Move the piece
-    this._move(piece, x, y);
-
-    // Get the captured piece and put it back
-    const captured = this.board.tempCaptured.pop()!;
-    const capX = captured.position.x;
-    const capY = captured.position.y;
-    this.board.setCell(capX, capY, captured);
-
-    if (captured.player) {
-      this.board.playerPieces.push(captured);
-      if (captured.king) {
-        this.board.playerKings++;
-        this.board.setKing(capX, capY, true);
-      }
-    } else {
-      this.board.aiPieces.push(captured);
-      if (captured.king) {
-        this.board.aiKings++;
-        this.board.setKing(capX, capY, true);
-      }
-    }
   }
 
   // Turns
@@ -364,32 +233,30 @@ class Checkers {
     this.draw();
   }
 
-  hasMoves(playerTurn: boolean): boolean {
-    if (playerTurn) {
+  hasMoves(player: boolean): boolean {
+    if (player) {
       for (const piece of this.board.playerPieces) {
-        const { x, y, } = piece.position;
-        if (this.board.isTopLeftEmpty(x, y))
+        if (this.board.isMovable(piece.position, DIRECTIONS.TOP_LEFT))
           return true;
-        if (this.board.isTopRightEmpty(x, y))
+        if (this.board.isMovable(piece.position, DIRECTIONS.TOP_RIGHT))
           return true;
         if (piece.king) {
-          if (this.board.isBottomLeftEmpty(x, y))
+          if (this.board.isMovable(piece.position, DIRECTIONS.BOTTOM_LEFT))
             return true;
-          if (this.board.isBottomRightEmpty(x, y))
+          if (this.board.isMovable(piece.position, DIRECTIONS.BOTTOM_RIGHT))
             return true;
         }
       }
     } else {
       for (const piece of this.board.aiPieces) {
-        const { x, y, } = piece.position;
-        if (this.board.isBottomLeftEmpty(x, y))
+        if (this.board.isMovable(piece.position, DIRECTIONS.BOTTOM_LEFT))
           return true;
-        if (this.board.isBottomRightEmpty(x, y))
+        if (this.board.isMovable(piece.position, DIRECTIONS.BOTTOM_RIGHT))
           return true;
         if (piece.king) {
-          if (this.board.isTopLeftEmpty(x, y))
+          if (this.board.isMovable(piece.position, DIRECTIONS.TOP_LEFT))
             return true;
-          if (this.board.isTopRightEmpty(x, y))
+          if (this.board.isMovable(piece.position, DIRECTIONS.TOP_RIGHT))
             return true;
         }
       }
@@ -410,7 +277,7 @@ class Checkers {
     return false;
   }
 
-  gameOver(playerTurn: boolean) {
+  gameOver(player: boolean) {
     if (this.board.playerPieces.length === 0) {
       alert('You Lose');
       return true;
@@ -421,7 +288,7 @@ class Checkers {
       return true;
     }
 
-    if (!this.hasAvailableMoves(playerTurn)) {
+    if (!this.hasAvailableMoves(player)) {
       alert('Draw');
       return true;
     }
@@ -434,25 +301,23 @@ class Checkers {
 
     if (player) {
       for (const piece of this.board.playerPieces) {
-        const { x, y, } = piece.position;
-
-        if (this.board.isTopLeftJumpable(x, y, false)) {
+        if (this.board.isJumpable(piece.position, DIRECTIONS.TOP_LEFT, false)) {
           jumpPieces.push(piece);
           continue;
         }
 
-        if (this.board.isTopRightJumpable(x, y, false)) {
+        if (this.board.isJumpable(piece.position, DIRECTIONS.TOP_RIGHT, false)) {
           jumpPieces.push(piece);
           continue;
         }
 
         if (piece.king) {
-          if (this.board.isBottomLeftJumpable(x, y, false)) {
+          if (this.board.isJumpable(piece.position, DIRECTIONS.BOTTOM_LEFT, false)) {
             jumpPieces.push(piece);
             continue;
           }
 
-          if (this.board.isBottomRightJumpable(x, y, false)) {
+          if (this.board.isJumpable(piece.position, DIRECTIONS.BOTTOM_RIGHT, false)) {
             jumpPieces.push(piece);
             continue;
           }
@@ -460,25 +325,23 @@ class Checkers {
       }
     } else {
       for (const piece of this.board.aiPieces) {
-        const { x, y, } = piece.position;
-
-        if (this.board.isBottomLeftJumpable(x, y, true)) {
+        if (this.board.isJumpable(piece.position, DIRECTIONS.BOTTOM_LEFT, true)) {
           jumpPieces.push(piece);
           continue;
         }
 
-        if (this.board.isBottomRightJumpable(x, y, true)) {
+        if (this.board.isJumpable(piece.position, DIRECTIONS.BOTTOM_RIGHT, true)) {
           jumpPieces.push(piece);
           continue;
         }
 
         if (piece.king) {
-          if (this.board.isTopLeftJumpable(x, y, true)) {
+          if (this.board.isJumpable(piece.position, DIRECTIONS.TOP_LEFT, true)) {
             jumpPieces.push(piece);
             continue;
           }
 
-          if (this.board.isTopRightJumpable(x, y, true)) {
+          if (this.board.isJumpable(piece.position, DIRECTIONS.TOP_RIGHT, true)) {
             jumpPieces.push(piece);
             continue;
           }
@@ -514,7 +377,7 @@ class Checkers {
   drawPieces() {
     this.graphics.lineStyle(OUTLINE_SIZE, COLORS.BLACK);
     this.graphics.beginFill(COLORS.WHITE);
-    for (const piece of this.board.playerPieces) {
+    for (const piece of this.board.aiPieces) {
       this.graphics.drawShape(piece);
       if (piece.king) {
         this.graphics.beginFill(COLORS.RED);
@@ -529,7 +392,7 @@ class Checkers {
 
     this.graphics.lineStyle(OUTLINE_SIZE, COLORS.WHITE);
     this.graphics.beginFill(COLORS.BLACK);
-    for (const piece of this.board.aiPieces) {
+    for (const piece of this.board.playerPieces) {
       this.graphics.drawShape(piece);
       if (piece.king) {
         this.graphics.beginFill(COLORS.RED);

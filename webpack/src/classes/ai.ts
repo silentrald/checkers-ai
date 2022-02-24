@@ -3,9 +3,10 @@ import Board from './board';
 import Piece from './piece';
 import Heuristic from './heuristic';
 
-import { Move, Vector2d } from './types';
+import { Move } from './types';
 import { MAX_DEPTH_MID, MAX_DEPTH_END } from '../config/values';
 import STATES from '../config/states';
+import DIRECTIONS from '../config/directions';
 
 const FLAGS = {
   UPPERBOUND: 0,
@@ -44,19 +45,22 @@ class AI {
   }
 
   private searchAllPossibleJumps(
-    piece: Piece, x: number, y: number,
-    moves: Vector2d[], output: Vector2d[][]
+    piece: Piece, position: number,
+    moves: number[], output: number[][]
   ) {
-    const pos = {
-      ...piece.position,
+    // TODO: Look into this
+    const move: Move = {
+      moves: [ piece.position, position ],
+      jumping: true,
+      promoting: !piece.king && (piece.player ?
+        this.board.isTopEdge(piece.position) :
+        this.board.isBottomEdge(piece.position)
+      ),
     };
-    this.checkers.jump(piece, x, y);
-    moves.push({
-      x,
-      y,
-    });
+    this.board.jump(move);
+    moves.push(position);
 
-    if (!this.checkers.promoted) {
+    if (!move.promoting) {
       const temp = this.getAllPossibleJump(piece, [ ...moves ]);
       if (temp.length < 1) {
         output.push([ ...moves ]);
@@ -68,61 +72,52 @@ class AI {
     }
 
     moves.pop();
-    this.checkers.reverseJump(piece, pos.x, pos.y);
+    this.board.reverseJump(move);
   }
 
-  private getAllPossibleJump(piece: Piece, moves: Vector2d[]): Vector2d[][] {
-    const { x, y, } = piece.position;
-    const output: Vector2d[][] = [];
+  private getAllPossibleJump(piece: Piece, moves: number[]): number[][] {
+    const output: number[][] = [];
 
     if (piece.player) {
       if (piece.king) {
-        if (this.board.isBottomLeftJumpable(x, y, false)) {
+        if (this.board.isJumpable(piece.position, DIRECTIONS.BOTTOM_LEFT, false))
           this.searchAllPossibleJumps(
-            piece, x - 2, y + 2, moves, output
+            piece, this.board.getBottomLeftJump(piece.position), moves, output
           );
-        }
-        if (this.board.isBottomRightJumpable(x, y, false)) {
+        if (this.board.isJumpable(piece.position, DIRECTIONS.BOTTOM_RIGHT, false))
           this.searchAllPossibleJumps(
-            piece, x + 2, y + 2, moves, output
+            piece, this.board.getBottomRightJump(piece.position), moves, output
           );
-        }
       }
 
-      if (this.board.isTopLeftJumpable(x, y, false)) {
+      if (this.board.isJumpable(piece.position, DIRECTIONS.TOP_LEFT, false))
         this.searchAllPossibleJumps(
-          piece, x - 2, y - 2, moves, output
+          piece, this.board.getTopLeftJump(piece.position), moves, output
         );
-      }
-      if (this.board.isTopRightJumpable(x, y, false)) {
+      if (this.board.isJumpable(piece.position, DIRECTIONS.TOP_RIGHT, false))
         this.searchAllPossibleJumps(
-          piece, x + 2, y - 2, moves, output
+          piece, this.board.getTopRightJump(piece.position), moves, output
         );
-      }
     } else {
       if (piece.king) {
-        if (this.board.isTopLeftJumpable(x, y, true)) {
+        if (this.board.isJumpable(piece.position, DIRECTIONS.TOP_LEFT, true))
           this.searchAllPossibleJumps(
-            piece, x - 2, y - 2, moves, output
+            piece, this.board.getTopLeftJump(piece.position), moves, output
           );
-        }
-        if (this.board.isTopRightJumpable(x, y, true)) {
+        if (this.board.isJumpable(piece.position, DIRECTIONS.TOP_RIGHT, true))
           this.searchAllPossibleJumps(
-            piece, x + 2, y - 2, moves, output
+            piece, this.board.getTopRightJump(piece.position), moves, output
           );
-        }
       }
 
-      if (this.board.isBottomLeftJumpable(x, y, true)) {
+      if (this.board.isJumpable(piece.position, DIRECTIONS.BOTTOM_LEFT, true))
         this.searchAllPossibleJumps(
-          piece, x - 2, y + 2, moves, output
+          piece, this.board.getBottomLeftJump(piece.position), moves, output
         );
-      }
-      if (this.board.isBottomRightJumpable(x, y, true)) {
+      if (this.board.isJumpable(piece.position, DIRECTIONS.BOTTOM_RIGHT, true))
         this.searchAllPossibleJumps(
-          piece, x + 2, y + 2, moves, output
+          piece, this.board.getBottomRightJump(piece.position), moves, output
         );
-      }
     }
 
     return output;
@@ -135,133 +130,85 @@ class AI {
 
     if (capturePieces.length > 0) {
       for (const piece of capturePieces) {
-        const allMoves = this.getAllPossibleJump(piece, []);
+        const allMoves = this.getAllPossibleJump(piece, [ piece.position ]);
         for (const moves of allMoves) {
           rootMoves.push({
-            moves: [ ...moves ],
-            starting: {
-              ...piece.position,
-            },
-            ending: moves[moves.length - 1],
+            moves,
             jumping: true,
+            promoting: !piece.king && (piece.player ?
+              this.board.isTopEdge(moves[moves.length - 1]) :
+              this.board.isBottomEdge(moves[moves.length - 1])
+            ),
           });
         }
       }
     } else if (player) {
+      let pos = 0;
       for (const piece of this.board.playerPieces) {
-        const { x, y, } = piece.position;
         if (piece.king) {
-          if (this.board.isBottomLeftEmpty(x, y)) {
-            const move = {
-              x: x - 1,
-              y: y + 1,
-            };
+          if (this.board.isMovable(piece.position, DIRECTIONS.BOTTOM_LEFT)) {
+            pos = this.board.getBottomLeft(piece.position);
             rootMoves.push({
-              moves:[ move ],
-              starting: {
-                ...piece.position,
-              },
-              ending: move,
+              moves: [ piece.position, pos ],
             });
           }
-          if (this.board.isBottomRightEmpty(x, y)) {
-            const move = {
-              x: x + 1,
-              y: y + 1,
-            };
+
+          if (this.board.isMovable(piece.position, DIRECTIONS.BOTTOM_RIGHT)) {
+            pos = this.board.getBottomRight(piece.position);
             rootMoves.push({
-              moves: [ move ],
-              starting: {
-                ...piece.position,
-              },
-              ending: move,
+              moves: [ piece.position, pos ],
             });
           }
         }
 
-        if (this.board.isTopLeftEmpty(x, y)) {
-          const move = {
-            x: x - 1,
-            y: y - 1,
-          };
+        if (this.board.isMovable(piece.position, DIRECTIONS.TOP_LEFT)) {
+          pos = this.board.getTopLeft(piece.position);
           rootMoves.push({
-            moves: [ move ],
-            starting: {
-              ...piece.position,
-            },
-            ending: move,
+            moves: [ piece.position, pos ],
+            promoting: !piece.king && this.board.isTopEdge(pos),
           });
         }
-        if (this.board.isTopRightEmpty(x, y)) {
-          const move = {
-            x: x + 1,
-            y: y - 1,
-          };
+
+        if (this.board.isMovable(piece.position, DIRECTIONS.TOP_RIGHT)) {
+          pos = this.board.getTopRight(piece.position);
           rootMoves.push({
-            moves: [ move ],
-            starting: {
-              ...piece.position,
-            },
-            ending: move,
+            moves: [ piece.position, pos ],
+            promoting: !piece.king && this.board.isTopEdge(pos),
           });
         }
       }
     } else {
+      let pos = 0;
       for (const piece of this.board.aiPieces) {
-        const { x, y, } = piece.position;
         if (piece.king) {
-          if (this.board.isTopLeftEmpty(x, y)) {
-            const move =  {
-              x: x - 1,
-              y: y - 1,
-            };
+          if (this.board.isMovable(piece.position, DIRECTIONS.TOP_LEFT)) {
+            pos = this.board.getTopLeft(piece.position);
             rootMoves.push({
-              moves: [ move ],
-              starting: {
-                ...piece.position,
-              },
-              ending: move,
+              moves: [ piece.position, pos ],
             });
           }
-          if (this.board.isTopRightEmpty(x, y)) {
-            const move = {
-              x: x + 1,
-              y: y - 1,
-            };
+
+          if (this.board.isMovable(piece.position, DIRECTIONS.TOP_RIGHT)) {
+            pos = this.board.getTopRight(piece.position);
             rootMoves.push({
-              moves: [ move ],
-              starting: {
-                ...piece.position,
-              },
-              ending: move,
+              moves: [ piece.position, pos ],
             });
           }
         }
 
-        if (this.board.isBottomLeftEmpty(x, y)) {
-          const move = {
-            x: x - 1,
-            y: y + 1,
-          };
+        if (this.board.isMovable(piece.position, DIRECTIONS.BOTTOM_LEFT)) {
+          pos = this.board.getBottomLeft(piece.position);
           rootMoves.push({
-            moves:[ move ],
-            starting: {
-              ...piece.position,
-            },
-            ending: move,
+            moves: [ piece.position, pos ],
+            promoting: !piece.king && this.board.isBottomEdge(pos),
           });
         }
-        if (this.board.isBottomRightEmpty(x, y)) {
-          const move = {
-            x: x + 1,
-            y: y + 1,
-          };
+
+        if (this.board.isMovable(piece.position, DIRECTIONS.BOTTOM_RIGHT)) {
+          pos = this.board.getBottomRight(piece.position);
           rootMoves.push({
-            moves: [ move ],
-            starting: {
-              ...piece.position,
-            },
-            ending: move,
+            moves: [ piece.position, pos ],
+            promoting: !piece.king && this.board.isBottomEdge(pos),
           });
         }
       }
@@ -271,45 +218,23 @@ class AI {
   }
 
   private _move(move: Move) {
-    const {
-      starting, moves, jumping,
-    } = move;
-    const piece = this.board.getCell(starting.x, starting.y) as Piece;
-    if (jumping) {
-      for (const { x, y, } of moves)
-        this.checkers.jump(piece, x, y);
+    if (move.jumping) {
+      this.board.jump(move);
     } else {
-      for (const { x, y, } of moves)
-        this.checkers.move(piece, x, y);
+      this.board.move(move);
     }
 
     this.board.playerTurn = !this.board.playerTurn;
-    move.promoted = this.checkers.promoted;
-    this.checkers.promoted = false;
   }
 
   private _reverseMove(move: Move) {
-    const {
-      moves, starting, ending, jumping,
-    } = move;
-    const piece = this.board.getCell(ending.x, ending.y) as Piece;
-    this.checkers.promoted = !!move.promoted;
-    this.board.playerTurn = !this.board.playerTurn;
-
-    const temp = moves.pop(); // Remove last move
-    moves.reverse();
-    if (jumping) {
-      for (const { x, y, } of moves)
-        this.checkers.reverseJump(piece, x, y);
-      this.checkers.reverseJump(piece, starting.x, starting.y);
+    if (move.jumping) {
+      this.board.reverseJump(move);
     } else {
-      for (const { x, y, } of moves)
-        this.checkers.reverseMove(piece, x, y);
-      this.checkers.reverseMove(piece, starting.x, starting.y);
+      this.board.reverseMove(move);
     }
 
-    moves.reverse();
-    moves.push(temp!); // Push it back the moves list
+    this.board.playerTurn = !this.board.playerTurn;
   }
 
   private quesceneSearch(
@@ -335,15 +260,12 @@ class AI {
     if (player) { // Player
       val = Infinity;
       for (const piece of capturePieces) {
-        const captureMoves = this.getAllPossibleJump(piece, []);
+        const captureMoves = this.getAllPossibleJump(piece, [ piece.position ]);
         for (const moves of captureMoves) {
-          const move = {
-            moves: [ ...moves ],
-            starting: {
-              ...piece.position,
-            },
-            ending: moves[moves.length - 1],
+          const move: Move = {
+            moves,
             jumping: true,
+            promoting: !piece.king && this.board.isTopEdge(moves[moves.length - 1]),
           };
           this._move(move);
           val = Math.min(val, this.quesceneSearch(alpha, beta, false));
@@ -356,15 +278,12 @@ class AI {
     } else { // AI
       val = -Infinity;
       for (const piece of capturePieces) {
-        const captureMoves = this.getAllPossibleJump(piece, []);
+        const captureMoves = this.getAllPossibleJump(piece, [ piece.position ]);
         for (const moves of captureMoves) {
-          const move = {
-            moves: [ ...moves ],
-            starting: {
-              ...piece.position,
-            },
-            ending: moves[moves.length - 1],
+          const move: Move = {
+            moves,
             jumping: true,
+            promoting: !piece.king && this.board.isBottomEdge(moves[moves.length - 1]),
           };
           this._move(move);
           val = Math.max(val, this.quesceneSearch(alpha, beta, true));
@@ -664,10 +583,6 @@ class AI {
           bestMove = move;
         }
       }
-
-      // console.log(this.matingTree.state);
-      // console.log(bestMove);
-      // console.log(this.matingTree);
     }
 
     this._move(bestMove);
