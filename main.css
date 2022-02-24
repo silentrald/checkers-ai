@@ -464,9 +464,6 @@ Ensure the default browser behavior of the `hidden` attribute.
 .gap-8 {
   gap: 2rem;
 }
-.scroll-auto {
-  scroll-behavior: auto;
-}
 .border-2 {
   border-width: 2px;
 }

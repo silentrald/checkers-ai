@@ -16,8 +16,8 @@ class Input {
   }
 
   // TODO: Implement flip
-  private convertVectorToPosition({ x, y, }: Vector2d, flip = false): number {
-    return flip ? 0 : ((7 - y) << 2) + 3 - (x >> 1);
+  private convertVectorToPosition({ x, y, }: Vector2d, flipped: boolean): number {
+    return flipped ? (y << 2) + (x >> 1) : ((7 - y) << 2) + 3 - (x >> 1);
   }
 
   mousedown(ev: any) {
@@ -26,7 +26,7 @@ class Input {
     const position = this.convertVectorToPosition({
       x: Math.floor(ev.data.global.x / TILE_SIZE),
       y: Math.floor(ev.data.global.y / TILE_SIZE),
-    });
+    }, this.checkers.flipped);
     const cell = this.board.getCell(position);
 
     if (!cell) return;

@@ -20,7 +20,7 @@ class Checkers {
 
   inputting = true;
   jumping = false;
-  promoted = false;
+  flipped = false;
   state = STATES.START;
 
   moveStack: Move[] = [];
@@ -44,8 +44,24 @@ class Checkers {
     // Setup the input system
     this.graphics.interactive = true;
     this.graphics.on('mousedown', (ev) => this.input.mousedown(ev));
+    this.graphics.transform.position.set(TILE_SIZE * 4, TILE_SIZE * 4);
+    this.graphics.transform.pivot.set(TILE_SIZE * 4, TILE_SIZE * 4);
 
-    // Redraw
+    this.newGame();
+  }
+
+  newGame() {
+    this.state = STATES.START;
+    this.inputting = true;
+    this.jumping = false;
+    this.moveStack = [];
+
+    this.ai.setup();
+
+    // Setup the rotation
+    this.flipped = this.board.flipped;
+    this.graphics.transform.rotation = this.board.flipped ? Math.PI : 0;
+
     this.draw();
 
     if (this.board.playerTurn) {
@@ -55,8 +71,9 @@ class Checkers {
     }
   }
 
-  setupBoard(fen: string) {
-    this.board.setBoard(fen);
+  flip() {
+    this.flipped = !this.flipped;
+    this.graphics.transform.rotation = this.flipped ? Math.PI : 0;
   }
 
   // Highlights
@@ -178,7 +195,6 @@ class Checkers {
       this.captureMove = undefined;
 
       this.jumping = false;
-      this.promoted = false;
     } else {
       this.board.move(move);
       this.pushToMoveStack(move);
@@ -195,7 +211,6 @@ class Checkers {
   setupTurn() {
     this.board.jumpPieces.splice(0);
     this.board.jumpPieces = this.getForceJumps(this.board.playerTurn);
-    this.promoted = false;
 
     // Change State
     if (this.state === STATES.MID &&
@@ -375,23 +390,10 @@ class Checkers {
   }
 
   drawPieces() {
-    this.graphics.lineStyle(OUTLINE_SIZE, COLORS.BLACK);
-    this.graphics.beginFill(COLORS.WHITE);
-    for (const piece of this.board.aiPieces) {
-      this.graphics.drawShape(piece);
-      if (piece.king) {
-        this.graphics.beginFill(COLORS.RED);
-        // TODO: Add king texture
-        this.graphics.drawRect(
-          piece.x - piece.radius / 2, piece.y - piece.radius / 2,
-          piece.radius, piece.radius
-        );
-        this.graphics.beginFill(COLORS.WHITE);
-      }
-    }
-
-    this.graphics.lineStyle(OUTLINE_SIZE, COLORS.WHITE);
-    this.graphics.beginFill(COLORS.BLACK);
+    const first = this.board.firstPlayerTurn ? COLORS.BLACK : COLORS.WHITE;
+    const second = this.board.firstPlayerTurn ? COLORS.WHITE : COLORS.BLACK;
+    this.graphics.lineStyle(OUTLINE_SIZE, second);
+    this.graphics.beginFill(first);
     for (const piece of this.board.playerPieces) {
       this.graphics.drawShape(piece);
       if (piece.king) {
@@ -401,7 +403,22 @@ class Checkers {
           piece.x - piece.radius / 2, piece.y - piece.radius / 2,
           piece.radius, piece.radius
         );
-        this.graphics.beginFill(COLORS.BLACK);
+        this.graphics.beginFill(first);
+      }
+    }
+
+    this.graphics.lineStyle(OUTLINE_SIZE, first);
+    this.graphics.beginFill(second);
+    for (const piece of this.board.aiPieces) {
+      this.graphics.drawShape(piece);
+      if (piece.king) {
+        this.graphics.beginFill(COLORS.RED);
+        // TODO: Add king texture
+        this.graphics.drawRect(
+          piece.x - piece.radius / 2, piece.y - piece.radius / 2,
+          piece.radius, piece.radius
+        );
+        this.graphics.beginFill(second);
       }
     }
 

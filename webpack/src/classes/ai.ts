@@ -7,6 +7,7 @@ import { Move } from './types';
 import { MAX_DEPTH_MID, MAX_DEPTH_END } from '../config/values';
 import STATES from '../config/states';
 import DIRECTIONS from '../config/directions';
+import { AI_FIRST_OPENING, AI_SECOND_OPENING } from '../config/opening';
 
 const FLAGS = {
   UPPERBOUND: 0,
@@ -28,6 +29,10 @@ interface MatingTree {
   state: string;
 }
 
+interface Opening {
+  [key: string]: { [key: string]: Opening }
+}
+
 class AI {
   checkers: Checkers;
   board: Board;
@@ -37,11 +42,16 @@ class AI {
   treeWalk: { [key: string]: boolean } = {};
   matingTree: MatingTree | undefined;
   mateMemo: { [key: string]: { node: MatingTree; depth: number; } } = {};
+  opening: Opening = {};
 
   constructor(checkers: Checkers) {
     this.checkers = checkers;
     this.board = checkers.board;
     this.heuristic = new Heuristic(checkers);
+  }
+
+  setup() {
+    this.opening = this.board.playerTurn ? AI_SECOND_OPENING : AI_FIRST_OPENING;
   }
 
   private searchAllPossibleJumps(
@@ -495,7 +505,44 @@ class AI {
     return node;
   }
 
+  private searchOpening(): Move | null {
+    const length = this.checkers.moveStack.length;
+    let tree: Opening = {};
+    if (length > 0) {
+      // Get the first move
+      const lastNotation = this.checkers.moveStack[length - 1].notation || '';
+      tree = this.opening[lastNotation];
+    } else {
+      tree = this.opening;
+    }
+
+    if (!tree)
+      return null;
+
+    const keys = Object.keys(tree);
+    if (keys.length === 0)
+      return null;
+
+    const notation = keys[Math.floor(Math.random() * keys.length)];
+    const move = this.board.convertNotationToMove(notation);
+    this.opening = tree[notation];
+
+    return move;
+  }
+
   move() {
+    if (this.checkers.state === STATES.START) {
+      const move = this.searchOpening();
+      if (move) {
+        this._move(move);
+        this.board.tempCaptured.splice(0);
+
+        this.checkers.pushToMoveStack(move);
+        return;
+      }
+      this.checkers.state = STATES.MID;
+    }
+
     if (this.matingTree) {
       const state = this.board.getState();
       const matingTree = this.matingTree.children.find((mt) => mt.state === state)!;
@@ -512,7 +559,6 @@ class AI {
 
     let depth = 0;
     switch (this.checkers.state) {
-    case STATES.START:
     case STATES.MID:
       depth = MAX_DEPTH_MID;
       break;

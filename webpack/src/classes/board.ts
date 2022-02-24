@@ -5,12 +5,12 @@ import { GridState, Move } from './types';
 import DIRECTIONS from '../config/directions';
 
 class Board {
-  // grid: GridState[][] = [];
-  boardString: string[] = [];
-  board: GridState[] = [];
+  state: string[] = [];
+  grid: GridState[] = [];
 
-  // playerTurn: boolean = Math.random() > 0.5;
+  firstPlayerTurn = true;
   playerTurn = true;
+  flipped = false;
   playerKings = 0;
   aiKings = 0;
   playerPieces: Piece[] = [];
@@ -23,8 +23,8 @@ class Board {
   constructor(fen?: string) {
     // Init Grid
     for (let i = 0; i < 32; i++) {
-      this.boardString.push('_');
-      this.board.push(null);
+      this.state.push('_');
+      this.grid.push(null);
     }
 
     if (!fen) return;
@@ -32,7 +32,7 @@ class Board {
   }
 
   setCell(position: number, val: GridState) {
-    this.board[position] = val;
+    this.grid[position] = val;
 
     let char = '_';
     if (val instanceof Piece) {
@@ -41,26 +41,26 @@ class Board {
     } else if (val instanceof Highlight) {
       char = 'H';
     }
-    this.boardString[position] = char;
+    this.state[position] = char;
   }
 
   getCell(position: number): GridState {
-    return this.board[position];
+    return this.grid[position];
   }
 
   getState(): string {
-    this.boardString.reverse();
-    let state = '';
-    for (let i = 0; i < 8; i++) {
-      if (i & 1) {
-        state += this.boardString.slice(i * 4, i * 4 + 4).join('*') + '*\n';
-      } else {
-        state += '*' + this.boardString.slice(i * 4, i * 4 + 4).join('*') + '\n';
-      }
-    }
-    this.boardString.reverse();
-    return state + '-' + (this.playerTurn ? 'P' : 'A');
-    // return this.boardString.join('') + '-' + (this.playerTurn ? 'P' : 'A');
+    // this.state.reverse();
+    // let state = '';
+    // for (let i = 0; i < 8; i++) {
+    //   if (i & 1) {
+    //     state += this.state.slice(i * 4, i * 4 + 4).join('*') + '*\n';
+    //   } else {
+    //     state += '*' + this.state.slice(i * 4, i * 4 + 4).join('*') + '\n';
+    //   }
+    // }
+    // this.state.reverse();
+    // return state + '-' + (this.playerTurn ? 'P' : 'A');
+    return this.state.join('') + '-' + (this.playerTurn ? 'P' : 'A');
   }
 
   // W - Ai
@@ -74,6 +74,8 @@ class Board {
     this.highlights = [];
     this.jumpPieces = [];
     this.tempCaptured = [];
+    this.grid = [];
+    this.state = [];
 
     const [
       turn,
@@ -114,25 +116,47 @@ class Board {
     }
   }
 
+  switch() {
+    this.flipped = !this.flipped;
+    const temp = this.aiPieces;
+    this.aiPieces = this.playerPieces;
+    this.playerPieces = temp;
+
+    this.aiPieces.map((piece) => {
+      piece.player = !piece.player;
+    });
+    this.playerPieces.map((piece) => {
+      piece.player = !piece.player;
+    });
+  }
+
   // TODO: Get the fen string
   getBoard(): string {
     return '';
   }
 
   getTopLeft(position: number): number {
-    return position + ((position >> 2) & 1 ? 4 : 5);
+    return this.flipped ?
+      position - ((position >> 2) & 1 ? 5 : 4) : // br
+      position + ((position >> 2) & 1 ? 4 : 5);  // tl
   }
 
   getTopRight(position: number): number {
-    return position + ((position >> 2) & 1 ? 3 : 4);
+    return this.flipped ?
+      position - ((position >> 2) & 1 ? 4 : 3) : // bl
+      position + ((position >> 2) & 1 ? 3 : 4);  // tr
   }
 
   getBottomLeft(position: number): number {
-    return position - ((position >> 2) & 1 ? 4 : 3);
+    return this.flipped ?
+      position + ((position >> 2) & 1 ? 3 : 4) : // tr
+      position - ((position >> 2) & 1 ? 4 : 3);  // bl
   }
 
   getBottomRight(position: number): number {
-    return position - ((position >> 2) & 1 ? 5 : 4);
+    return this.flipped ?
+      position + ((position >> 2) & 1 ? 4 : 5) : // tl
+      position - ((position >> 2) & 1 ? 5 : 4);  // br
   }
 
   getMiddle(start: number, end: number): number {
@@ -140,19 +164,19 @@ class Board {
   }
 
   getTopLeftJump(position: number): number {
-    return position + 9;
+    return this.flipped ? position - 9 : position + 9;
   }
 
   getTopRightJump(position: number): number {
-    return position + 7;
+    return this.flipped ? position - 7 : position + 7;
   }
 
   getBottomLeftJump(position: number): number {
-    return position - 7;
+    return this.flipped ? position + 7 : position - 7;
   }
 
   getBottomRightJump(position: number): number {
-    return position - 9;
+    return this.flipped ? position + 9 : position - 9;
   }
 
   // Move Check
@@ -161,39 +185,55 @@ class Board {
   }
 
   isTopEdge(position: number): boolean {
-    return position > 27;
+    return this.flipped ?
+      position < 4 : // b
+      position > 27; // t
   }
 
   isTopJumpEdge(position: number): boolean {
-    return position > 23;
+    return this.flipped ?
+      position < 8 : // b
+      position > 23; // t
   }
 
   isBottomEdge(position: number): boolean {
-    return position < 4;
+    return this.flipped ?
+      position > 27 : // t
+      position < 4;   // b
   }
 
   isBottomJumpEdge(position: number): boolean {
-    return position < 8;
+    return this.flipped ?
+      position > 23 : // t
+      position < 8;   // b
   }
 
   isLeftEdge(position: number): boolean {
-    return position % 8 === 3;
+    return this.flipped ?
+      position % 8 === 4 : // r
+      position % 8 === 3;  // l
   }
 
   isLeftJumpEdge(position: number): boolean {
-    return position % 4 === 3;
+    return this.flipped ?
+      position % 4 === 0 : // r
+      position % 4 === 3;  // l
   }
 
   isRightEdge(position: number): boolean {
-    return position % 8 === 4;
+    return this.flipped ?
+      position % 8 === 3 : // l
+      position % 8 === 4;  // r
   }
 
   isRightJumpEdge(position: number): boolean {
-    return position % 4 === 0;
+    return this.flipped ?
+      position % 4 === 3 : // l
+      position % 4 === 0;  // r
   }
 
   isEmpty(position: number): boolean {
-    return !this.board[position];
+    return !this.grid[position];
   }
 
   // Move Checks
@@ -252,18 +292,18 @@ class Board {
     }
 
     const mid = this.getMiddle(start, end);
-    const cell = this.board[mid];
-    return cell instanceof Piece && cell.player === opponent && !this.board[end];
+    const cell = this.grid[mid];
+    return cell instanceof Piece && cell.player === opponent && !this.grid[end];
   }
 
   // Move is not capturable
   isOccupiedByPieceOrKing(position: number, player: boolean): boolean {
-    const cell = this.board[position];
+    const cell = this.grid[position];
     return cell instanceof Piece && cell.player === player;
   }
 
   isOccupiedByKing(position: number, player: boolean): boolean {
-    const cell = this.board[position];
+    const cell = this.grid[position];
     return cell instanceof Piece && cell.player === player && cell.king;
   }
 
@@ -412,14 +452,14 @@ class Board {
     if (top) {
       if (position === 31) // Double Corner 31,27
         return !(this.isBottomRightOpen(31, player) &&
-        (this.board[27] ? true : this.isBottomRightOpen(27, player)));
+        (this.grid[27] ? true : this.isBottomRightOpen(27, player)));
 
       return !(this.isBottomLeftOpen(position, player) || this.isBottomRightOpen(position, player));
     }
     if (left) {
       if (position === 27) { // Double Corner 31,27
         return !(this.isBottomRightOpen(27, player) &&
-          (this.board[31] ? true : this.isBottomRightOpen(31, player)));
+          (this.grid[31] ? true : this.isBottomRightOpen(31, player)));
       }
 
       return !(this.isTopRightOpen(position, player) || this.isBottomRightOpen(position, player));
@@ -427,14 +467,14 @@ class Board {
     if (bot) {
       if (position === 0) { // Double Corner 0,4
         return !(this.isTopLeftOpen(0, player) &&
-          (this.board[4] ? true : this.isTopLeftOpen(4, player)));
+          (this.grid[4] ? true : this.isTopLeftOpen(4, player)));
       }
       return !(this.isTopLeftOpen(position, player) || this.isTopRightOpen(position, player));
     }
     if (right) {
       if (position === 4) { // Double Corner 0,4
         return !(this.isTopLeftOpen(4, player) &&
-          (this.board[0] ? true : this.isTopLeftOpen(0, player)));
+          (this.grid[0] ? true : this.isTopLeftOpen(0, player)));
       }
       return !(this.isTopLeftOpen(position, player) || this.isBottomLeftOpen(position, player));
     }
@@ -585,6 +625,33 @@ class Board {
     }
 
     move.moves.reverse();
+  }
+
+  convertNotationToMove(notation: string): Move {
+    if (notation.indexOf('-') > -1) { // move
+      const [ start, end ] = notation.split('-').map((val) => +val - 1);
+      const piece = this.getCell(start) as Piece;
+      return {
+        moves: [ start, end ],
+        promoting: !piece.king && (piece.player ?
+          this.isTopEdge(end) :
+          this.isBottomEdge(end)
+        ),
+        notation,
+      } as Move;
+    } else { // jump
+      const moves = notation.split('x').map((val) => +val - 1);
+      const piece = this.getCell(moves[0]) as Piece;
+      return {
+        moves,
+        jumping: true,
+        promoting: !piece.king && (piece.player ?
+          this.isTopEdge(moves[moves.length - 1]) :
+          this.isBottomEdge(moves[moves.length - 1])
+        ),
+        notation,
+      };
+    }
   }
 }
 
