@@ -217,10 +217,13 @@ class Checkers {
     this.addNotationToMove(move);
 
     const table = document.getElementById('move-notation')! as HTMLTableElement;
+    const tbody = table.tBodies[0];
     const moves = this.moveStack.length >> 1;
-    const row = this.moveStack.length & 1 ? table.rows[moves + 1] : table.insertRow();
+    const row = this.moveStack.length & 1 ? tbody.rows[moves] : tbody.insertRow();
     const cell = row.insertCell(this.moveStack.length & 1);
     cell.innerHTML = move.notation || '';
+    cell.className = 'w-40';
+    tbody.scrollTo(0, tbody.scrollHeight);
 
     this.moveStack.push(move);
   }
@@ -282,8 +285,8 @@ class Checkers {
     this.board.jumpPieces = this.getForceJumps(this.board.playerTurn);
 
     // Change State
-    if (this.state === STATES.MID &&
-        (this.board.aiPieces.length + this.board.playerPieces.length < 8)
+    if (this.state !== STATES.END &&
+        (this.board.aiPieces.length  < 4 || this.board.playerPieces.length < 4)
     ) {
       this.state = STATES.END;
     }

@@ -16,10 +16,10 @@
       }
 
       tr:nth-child(odd) {
-        background-color: gainsboro;
+        background-color: white;
       }
 
-      tr:nth-child(event) {
+      tr:nth-child(even) {
         background-color: lightgray;
       }
 
@@ -43,12 +43,13 @@
         <div class="w-80 flex flex-col justify-between">
           <table
             id="move-notation"
-            class="w-full h-80 bg-white text-xl border-2 border-black overflow-y-auto block shadow"
+            class="w-full bg-white text-xl border-2 border-black shadow"
           >
-            <thead>
-              <th class="w-40 h-12">Black</th>
-              <th class="w-40 h-12">White</th>
+            <thead class="block border-b-2 border-black">
+              <th class="w-40 h-12 bg-slate-500 text-white">Black</th>
+              <th class="w-40 h-12 bg-slate-500 text-white">White</th>
             </thead>
+            <tbody class="h-80 overflow-y-auto block"></tbody>
           </table>
 
           <div class="flex flex-col gap-2">
@@ -97,6 +98,13 @@
           </div>
         </div>
       </div>
+
+      <!-- <a
+        class="absolute bottom-0 right-0 my-2 mx-4"
+        href="https://www.freepik.com/photos/background"
+      >
+        Background photo created by kues1 - www.freepik.com
+      </a> -->
     </div>
   </body>
 </html>

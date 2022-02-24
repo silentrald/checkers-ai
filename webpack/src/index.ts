@@ -3,6 +3,10 @@ import Checkers from './classes/checkers';
 import Board from './classes/board';
 
 const board = new Board('B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12');
+// const board = new Board('B:BK9,K10:WK18');
+// const board = new Board('B:BK23,K24:WK15');
+// const board = new Board('B:WK10,K15,K19:BK5,K27');
+
 const checkers = new Checkers(board);
 document.getElementById('checkers')?.appendChild(checkers.app.view);
 

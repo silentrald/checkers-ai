@@ -1,3 +1,4 @@
+import DIRECTIONS from '../config/directions';
 import STATES from '../config/states';
 import Board from './board';
 import Checkers from './checkers';
@@ -7,13 +8,11 @@ class Heuristic {
   checkers: Checkers;
   board: Board;
 
-  winFactor = 1000;
   pieceFactor = 4;
-  kingFactor = 8;
-  trapKingFactor = 3;
-  runawayFactor = 4;
-  trapFactor = 3;
-  oppositionFactor = 3;
+  kingFactor = 10;
+  trapKingFactor = 5;
+  runawayFactor = 6;
+  trapFactor = 5;
 
   /* eslint-disable */
   // Mid Game Position Factors
@@ -37,7 +36,18 @@ class Heuristic {
     3, 7, 2, 6,
     1, 2, 8, 6
   ];
+  doubleDiagonal = [
+    1, 0, 0, 0,
+    1, 1, 0, 0,
+    1, 1, 0, 0,
+    0, 1, 1, 0,
+    0, 1, 1, 1,
+    0, 0, 1, 1,
+    0, 0, 1, 1,
+    0, 0, 0, 1
+  ];
   /* eslint-enable */
+
 
   constructor(checkers: Checkers) {
     this.checkers = checkers;
@@ -54,13 +64,16 @@ class Heuristic {
     //** Value Factors */
     // Piece Count
     score += (aiCount - playerCount) * this.pieceFactor;
-    // King Count
-    score += (this.board.aiKings - this.board.playerKings) * this.kingFactor;
 
     switch (this.checkers.state) {
     case STATES.MID:
+      // King Count
+      score += (this.board.aiKings - this.board.playerKings) * this.kingFactor;
+
       for (const piece of this.board.playerPieces) {
-        score += this.midGamePositionFactors[piece.position]; // Positional
+        score -= piece.position >> 2; // Close to promotion squares
+        score -= this.midGamePositionFactors[piece.position];
+
         if (piece.king) { // Check for trapped king
           if (this.board.isKingTrapped(piece.position, piece.player))
             score += this.trapKingFactor;
@@ -69,8 +82,11 @@ class Heuristic {
             score -= this.runawayFactor;
         }
       }
+
       for (const piece of this.board.aiPieces) {
-        score -= this.midGamePositionFactors[piece.position]; // Positional
+        score += 7 - (piece.position >> 2); // Close to promotion squares
+        score += this.midGamePositionFactors[piece.position];
+
         if (piece.king) { // Check for trapped king
           if (this.board.isKingTrapped(piece.position, piece.player))
             score -= this.trapKingFactor;
@@ -81,50 +97,73 @@ class Heuristic {
       }
       break;
     case STATES.END:
+      // King Count
+      score += (this.board.aiKings - this.board.playerKings) * this.kingFactor * 2;
+
       //** Positional */
-      for (const piece of this.board.playerPieces) {
-        score += this.endGamePositionFactors[piece.position];
-      }
-      for (const piece of this.board.aiPieces) {
-        score -= this.endGamePositionFactors[piece.position];
-      }
+      // for (const piece of this.board.playerPieces) {
+      //   score += this.endGamePositionFactors[piece.position];
+      // }
+      // for (const piece of this.board.aiPieces) {
+      //   score -= this.endGamePositionFactors[piece.position];
+      // }
 
-      // Distance to from corner edge
-      // AI Advantage
+      // Ai is winning
       if (playerCount < aiCount) {
-        // Force the piece to a corner rather than a double corner
-        // for (const piece of this.board.playerPieces) {
-        //   const { x, y, } = piece.position;
-        //   score += (14 - x + Math.abs(7 - y));
+        for (const piece of this.board.playerPieces) {
+          score -= this.board.countSafeMoves(piece.position, piece.player) * 10;
+
+          const top = this.board.isTopJumpEdge(piece.position);
+          const bottom = this.board.isBottomJumpEdge(piece.position);
+          const left = this.board.isLeftJumpEdge(piece.position);
+          const right = this.board.isRightJumpEdge(piece.position);
+          const doubleD = this.doubleDiagonal[piece.position];
+          // At double corner
+          if (bottom && right || top && left) {
+            score += 1;
+          } else if (doubleD) {
+            score += 3;
+          } else if (top || bottom || left || right) {
+            score += 9;
+          } else {
+            score += 6;
+          }
+        }
+
+        // incentivize trading pieces
+        score += (12 - playerCount - aiCount) * 10;
+
+        // for (const pp of this.board.playerPieces) {
+        //   for (const ap of this.board.aiPieces) {
+        //     score += 10 - this.board.getDistance(pp.position, ap.position);
+        //   }
         // }
 
-        // for (const piece of this.board.aiPieces) {
-        //   const { x, y } = piece.position;
-        //   score +=
-        // }
+        // Dog pattern check
+        if (
+          this.board.isDogPattern(DIRECTIONS.BOTTOM_RIGHT) ||
+          this.board.isDogPattern(DIRECTIONS.TOP_LEFT)
+        ) {
+          score += 6;
+        }
+      } else if (playerCount === aiCount) {
+        score -= 40;
+      } else { // piece disadvantage
+        for (const piece of this.board.aiPieces) {
+          const top = this.board.isTopJumpEdge(piece.position);
+          const bottom = this.board.isBottomJumpEdge(piece.position);
+          const left = this.board.isLeftJumpEdge(piece.position);
+          const right = this.board.isRightJumpEdge(piece.position);
+          // At double corner
+          if (bottom && right || top && left) {
+            score += 20;
+          } else if (top || bottom || left || right) {
+            score -= 20;
+          } else {
+            score -= 5;
+          }
+        }
       }
-      // else {
-      //   for (const piece of this.board.aiPieces) {
-      //     const { x, y, } = piece.position;
-      //     score -= 12 - x - Math.abs(y - 6);
-      //   }
-      // }
-
-      // Sum of distances
-      // for (const { position: pPos, } of this.board.playerPieces) {
-      //   for (const { position: aPos, } of this.board.aiPieces) {
-      //     score += (14 - (Math.abs(pPos.x - aPos.x) + Math.abs(pPos.y - aPos.y))) * 3;
-      //   }
-      // }
-
-      // Farthest Distance
-      // tmp = 0;
-      // for (const { position: pPos, } of this.board.playerPieces) {
-      //   for (const { position: aPos, } of this.board.aiPieces) {
-      //     tmp = Math.max(tmp, Math.abs(pPos.x - aPos.x) + Math.abs(pPos.y - aPos.y));
-      //   }
-      // }
-      // score += 14 - tmp;
 
       // Trapped Pieces
       for (const piece of this.board.playerPieces) {

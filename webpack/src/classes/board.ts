@@ -135,6 +135,11 @@ class Board {
     return '';
   }
 
+  getDistance(p1: number, p2: number): number {
+    const diff = Math.abs(p1 - p2);
+    return (diff >> 2) + diff % 4;
+  }
+
   getTopLeft(position: number): number {
     return this.flipped ?
       position - ((position >> 2) & 1 ? 5 : 4) : // br
@@ -507,6 +512,30 @@ class Board {
     return this.isBottomLeftOpen(position, player) || this.isBottomRightOpen(position, player);
   }
 
+  // Patterns
+  isDogPattern(direction: number): boolean {
+    if (direction === DIRECTIONS.BOTTOM_RIGHT) {
+      const p1 = this.state[0];
+      const p2 = this.state[4];
+      return p1 === 'P' && p2 === 'A' || p1 === 'A' && p2 === 'P';
+    }
+
+    if (direction === DIRECTIONS.TOP_LEFT) {
+      const p1 = this.state[31];
+      const p2 = this.state[27];
+      return p1 === 'P' && p2 === 'A' || p1 === 'A' && p2 === 'P';
+    }
+
+    return false;
+  }
+
+  countSafeMoves(position: number, player: boolean): number {
+    return +this.isTopLeftOpen(position, player) +
+      +this.isTopRightOpen(position, player) +
+      +this.isBottomLeftOpen(position, player) +
+      +this.isBottomLeftOpen(position, player);
+  }
+
   // Methods
   promote(piece: Piece, promoting: boolean) {
     if (piece.king) return;
@@ -596,9 +625,6 @@ class Board {
 
     // Move Current Piece
     const piece = this.getCell(end) as Piece;
-    if (!piece) {
-      console.log(this.getState(), move.moves, piece);
-    }
     this.demote(piece, !!move.promoting);
     piece.setPosition(start);
     this.setCell(end, null);

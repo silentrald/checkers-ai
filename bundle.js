@@ -41757,6 +41757,7 @@ class AI {
         this.treeWalk = {};
         this.mateMemo = {};
         this.opening = {};
+        this.repetitions = {};
         this.checkers = checkers;
         this.board = checkers.board;
         this.heuristic = new _heuristic__WEBPACK_IMPORTED_MODULE_0__["default"](checkers);
@@ -41932,7 +41933,7 @@ class AI {
         }
         this.board.playerTurn = !this.board.playerTurn;
     }
-    quesceneSearch(alpha, beta, player) {
+    quiescentSearch(alpha, beta, player) {
         if (this.board.playerPieces.length === 0)
             return 2000;
         if (this.board.aiPieces.length === 0)
@@ -41957,7 +41958,7 @@ class AI {
                         promoting: !piece.king && this.board.isTopEdge(moves[moves.length - 1]),
                     };
                     this._move(move);
-                    val = Math.min(val, this.quesceneSearch(alpha, beta, false));
+                    val = Math.min(val, this.quiescentSearch(alpha, beta, false));
                     this._reverseMove(move);
                     if (val <= alpha)
                         return val;
@@ -41976,7 +41977,7 @@ class AI {
                         promoting: !piece.king && this.board.isBottomEdge(moves[moves.length - 1]),
                     };
                     this._move(move);
-                    val = Math.max(val, this.quesceneSearch(alpha, beta, true));
+                    val = Math.max(val, this.quiescentSearch(alpha, beta, true));
                     this._reverseMove(move);
                     if (val >= beta)
                         return val;
@@ -41985,6 +41986,12 @@ class AI {
             }
         }
         return val;
+    }
+    sortMoves(moves) {
+        // average for player movements
+        moves.sort((m1, m2) => {
+            return m1.moves.length - m2.moves.length;
+        });
     }
     negamax(depth, alpha, beta, color) {
         const player = color < 0;
@@ -42007,15 +42014,10 @@ class AI {
         if (this.board.aiPieces.length === 0)
             return -2000 * color;
         if (depth < 1)
-            return this.quesceneSearch(alpha, beta, player) * color;
+            return this.quiescentSearch(alpha, beta, player) * color;
         let max = -2000;
         const allMoves = this.getAllPossibleMoves(player);
-        allMoves.sort((a, b) => a.moves.length - b.moves.length);
-        // Prioritize moves to the center of the board
-        // allMoves.sort((m1, m2) =>
-        //   Math.abs(m1.ending.x - 3.5) + Math.abs(m1.ending.y - 3.5) -
-        //   Math.abs(m2.ending.x - 3.5) - Math.abs(m2.ending.y - 3.5)
-        // );
+        this.sortMoves(allMoves);
         this.treeWalk[state] = true;
         for (const moves of allMoves) {
             this._move(moves);
@@ -42082,9 +42084,9 @@ class AI {
             return node;
         }
         if (depth < 1) {
-            const mate = this.quesceneSearch(-Infinity, Infinity, player) > 999;
+            const mate = this.quiescentSearch(-Infinity, Infinity, player) > 999;
             node.count = mate ? 0 : _config_values__WEBPACK_IMPORTED_MODULE_1__.MAX_DEPTH_END;
-            node.mate = true;
+            node.mate = mate;
             return node;
         }
         const allMoves = this.getAllPossibleMoves(player);
@@ -42183,13 +42185,19 @@ class AI {
                 }
             }
         }
-        let depth = 0;
+        let depth = 0, count = 0;
         switch (this.checkers.state) {
             case _config_states__WEBPACK_IMPORTED_MODULE_2__["default"].MID:
                 depth = _config_values__WEBPACK_IMPORTED_MODULE_1__.MAX_DEPTH_MID;
                 break;
             case _config_states__WEBPACK_IMPORTED_MODULE_2__["default"].END:
-                depth = Math.min(_config_values__WEBPACK_IMPORTED_MODULE_1__.MAX_DEPTH_MID, _config_values__WEBPACK_IMPORTED_MODULE_1__.MAX_DEPTH_END - this.board.aiPieces.length - this.board.playerPieces.length);
+                count = this.board.aiPieces.length + this.board.playerPieces.length;
+                if (count < 5) {
+                    depth = _config_values__WEBPACK_IMPORTED_MODULE_1__.MAX_DEPTH_END_4;
+                }
+                else {
+                    depth = _config_values__WEBPACK_IMPORTED_MODULE_1__.MAX_DEPTH_END;
+                }
                 break;
         }
         // Check for moves
@@ -42381,6 +42389,10 @@ class Board {
     // TODO: Get the fen string
     getBoard() {
         return '';
+    }
+    getDistance(p1, p2) {
+        const diff = Math.abs(p1 - p2);
+        return (diff >> 2) + diff % 4;
     }
     getTopLeft(position) {
         return this.flipped ?
@@ -42677,6 +42689,26 @@ class Board {
             return this.isBottomRightOpen(position, player);
         return this.isBottomLeftOpen(position, player) || this.isBottomRightOpen(position, player);
     }
+    // Patterns
+    isDogPattern(direction) {
+        if (direction === _config_directions__WEBPACK_IMPORTED_MODULE_2__["default"].BOTTOM_RIGHT) {
+            const p1 = this.state[0];
+            const p2 = this.state[4];
+            return p1 === 'P' && p2 === 'A' || p1 === 'A' && p2 === 'P';
+        }
+        if (direction === _config_directions__WEBPACK_IMPORTED_MODULE_2__["default"].TOP_LEFT) {
+            const p1 = this.state[31];
+            const p2 = this.state[27];
+            return p1 === 'P' && p2 === 'A' || p1 === 'A' && p2 === 'P';
+        }
+        return false;
+    }
+    countSafeMoves(position, player) {
+        return +this.isTopLeftOpen(position, player) +
+            +this.isTopRightOpen(position, player) +
+            +this.isBottomLeftOpen(position, player) +
+            +this.isBottomLeftOpen(position, player);
+    }
     // Methods
     promote(piece, promoting) {
         if (piece.king)
@@ -42753,9 +42785,6 @@ class Board {
         const [end, ...positions] = move.moves;
         // Move Current Piece
         const piece = this.getCell(end);
-        if (!piece) {
-            console.log(this.getState(), move.moves, piece);
-        }
         this.demote(piece, !!move.promoting);
         piece.setPosition(start);
         this.setCell(end, null);
@@ -43008,10 +43037,13 @@ class Checkers {
     pushToMoveStack(move) {
         this.addNotationToMove(move);
         const table = document.getElementById('move-notation');
+        const tbody = table.tBodies[0];
         const moves = this.moveStack.length >> 1;
-        const row = this.moveStack.length & 1 ? table.rows[moves + 1] : table.insertRow();
+        const row = this.moveStack.length & 1 ? tbody.rows[moves] : tbody.insertRow();
         const cell = row.insertCell(this.moveStack.length & 1);
         cell.innerHTML = move.notation || '';
+        cell.className = 'w-40';
+        tbody.scrollTo(0, tbody.scrollHeight);
         this.moveStack.push(move);
     }
     // Piece Movement
@@ -43063,8 +43095,8 @@ class Checkers {
         this.board.jumpPieces.splice(0);
         this.board.jumpPieces = this.getForceJumps(this.board.playerTurn);
         // Change State
-        if (this.state === _config_states__WEBPACK_IMPORTED_MODULE_6__["default"].MID &&
-            (this.board.aiPieces.length + this.board.playerPieces.length < 8)) {
+        if (this.state !== _config_states__WEBPACK_IMPORTED_MODULE_6__["default"].END &&
+            (this.board.aiPieces.length < 4 || this.board.playerPieces.length < 4)) {
             this.state = _config_states__WEBPACK_IMPORTED_MODULE_6__["default"].END;
         }
     }
@@ -43285,19 +43317,19 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _config_states__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../config/states */ "./src/config/states.ts");
+/* harmony import */ var _config_directions__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../config/directions */ "./src/config/directions.ts");
+/* harmony import */ var _config_states__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../config/states */ "./src/config/states.ts");
+
 
 // import Piece from './piece';
 class Heuristic {
     /* eslint-enable */
     constructor(checkers) {
-        this.winFactor = 1000;
         this.pieceFactor = 4;
-        this.kingFactor = 8;
-        this.trapKingFactor = 3;
-        this.runawayFactor = 4;
-        this.trapFactor = 3;
-        this.oppositionFactor = 3;
+        this.kingFactor = 10;
+        this.trapKingFactor = 5;
+        this.runawayFactor = 6;
+        this.trapFactor = 5;
         /* eslint-disable */
         // Mid Game Position Factors
         this.midGamePositionFactors = [
@@ -43320,6 +43352,16 @@ class Heuristic {
             3, 7, 2, 6,
             1, 2, 8, 6
         ];
+        this.doubleDiagonal = [
+            1, 0, 0, 0,
+            1, 1, 0, 0,
+            1, 1, 0, 0,
+            0, 1, 1, 0,
+            0, 1, 1, 1,
+            0, 0, 1, 1,
+            0, 0, 1, 1,
+            0, 0, 0, 1
+        ];
         this.checkers = checkers;
         this.board = checkers.board;
     }
@@ -43331,12 +43373,13 @@ class Heuristic {
         //** Value Factors */
         // Piece Count
         score += (aiCount - playerCount) * this.pieceFactor;
-        // King Count
-        score += (this.board.aiKings - this.board.playerKings) * this.kingFactor;
         switch (this.checkers.state) {
-            case _config_states__WEBPACK_IMPORTED_MODULE_0__["default"].MID:
+            case _config_states__WEBPACK_IMPORTED_MODULE_1__["default"].MID:
+                // King Count
+                score += (this.board.aiKings - this.board.playerKings) * this.kingFactor;
                 for (const piece of this.board.playerPieces) {
-                    score += this.midGamePositionFactors[piece.position]; // Positional
+                    score -= piece.position >> 2; // Close to promotion squares
+                    score -= this.midGamePositionFactors[piece.position];
                     if (piece.king) { // Check for trapped king
                         if (this.board.isKingTrapped(piece.position, piece.player))
                             score += this.trapKingFactor;
@@ -43347,7 +43390,8 @@ class Heuristic {
                     }
                 }
                 for (const piece of this.board.aiPieces) {
-                    score -= this.midGamePositionFactors[piece.position]; // Positional
+                    score += 7 - (piece.position >> 2); // Close to promotion squares
+                    score += this.midGamePositionFactors[piece.position];
                     if (piece.king) { // Check for trapped king
                         if (this.board.isKingTrapped(piece.position, piece.player))
                             score -= this.trapKingFactor;
@@ -43358,47 +43402,73 @@ class Heuristic {
                     }
                 }
                 break;
-            case _config_states__WEBPACK_IMPORTED_MODULE_0__["default"].END:
+            case _config_states__WEBPACK_IMPORTED_MODULE_1__["default"].END:
+                // King Count
+                score += (this.board.aiKings - this.board.playerKings) * this.kingFactor * 2;
                 //** Positional */
-                for (const piece of this.board.playerPieces) {
-                    score += this.endGamePositionFactors[piece.position];
-                }
-                for (const piece of this.board.aiPieces) {
-                    score -= this.endGamePositionFactors[piece.position];
-                }
-                // Distance to from corner edge
-                // AI Advantage
+                // for (const piece of this.board.playerPieces) {
+                //   score += this.endGamePositionFactors[piece.position];
+                // }
+                // for (const piece of this.board.aiPieces) {
+                //   score -= this.endGamePositionFactors[piece.position];
+                // }
+                // Ai is winning
                 if (playerCount < aiCount) {
-                    // Force the piece to a corner rather than a double corner
-                    // for (const piece of this.board.playerPieces) {
-                    //   const { x, y, } = piece.position;
-                    //   score += (14 - x + Math.abs(7 - y));
+                    for (const piece of this.board.playerPieces) {
+                        score -= this.board.countSafeMoves(piece.position, piece.player) * 10;
+                        const top = this.board.isTopJumpEdge(piece.position);
+                        const bottom = this.board.isBottomJumpEdge(piece.position);
+                        const left = this.board.isLeftJumpEdge(piece.position);
+                        const right = this.board.isRightJumpEdge(piece.position);
+                        const doubleD = this.doubleDiagonal[piece.position];
+                        // At double corner
+                        if (bottom && right || top && left) {
+                            score += 1;
+                        }
+                        else if (doubleD) {
+                            score += 3;
+                        }
+                        else if (top || bottom || left || right) {
+                            score += 9;
+                        }
+                        else {
+                            score += 6;
+                        }
+                    }
+                    // incentivize trading pieces
+                    score += (12 - playerCount - aiCount) * 10;
+                    // for (const pp of this.board.playerPieces) {
+                    //   for (const ap of this.board.aiPieces) {
+                    //     score += 10 - this.board.getDistance(pp.position, ap.position);
+                    //   }
                     // }
-                    // for (const piece of this.board.aiPieces) {
-                    //   const { x, y } = piece.position;
-                    //   score +=
-                    // }
+                    // Dog pattern check
+                    if (this.board.isDogPattern(_config_directions__WEBPACK_IMPORTED_MODULE_0__["default"].BOTTOM_RIGHT) ||
+                        this.board.isDogPattern(_config_directions__WEBPACK_IMPORTED_MODULE_0__["default"].TOP_LEFT)) {
+                        score += 6;
+                    }
                 }
-                // else {
-                //   for (const piece of this.board.aiPieces) {
-                //     const { x, y, } = piece.position;
-                //     score -= 12 - x - Math.abs(y - 6);
-                //   }
-                // }
-                // Sum of distances
-                // for (const { position: pPos, } of this.board.playerPieces) {
-                //   for (const { position: aPos, } of this.board.aiPieces) {
-                //     score += (14 - (Math.abs(pPos.x - aPos.x) + Math.abs(pPos.y - aPos.y))) * 3;
-                //   }
-                // }
-                // Farthest Distance
-                // tmp = 0;
-                // for (const { position: pPos, } of this.board.playerPieces) {
-                //   for (const { position: aPos, } of this.board.aiPieces) {
-                //     tmp = Math.max(tmp, Math.abs(pPos.x - aPos.x) + Math.abs(pPos.y - aPos.y));
-                //   }
-                // }
-                // score += 14 - tmp;
+                else if (playerCount === aiCount) {
+                    score -= 40;
+                }
+                else { // piece disadvantage
+                    for (const piece of this.board.aiPieces) {
+                        const top = this.board.isTopJumpEdge(piece.position);
+                        const bottom = this.board.isBottomJumpEdge(piece.position);
+                        const left = this.board.isLeftJumpEdge(piece.position);
+                        const right = this.board.isRightJumpEdge(piece.position);
+                        // At double corner
+                        if (bottom && right || top && left) {
+                            score += 20;
+                        }
+                        else if (top || bottom || left || right) {
+                            score -= 20;
+                        }
+                        else {
+                            score -= 5;
+                        }
+                    }
+                }
                 // Trapped Pieces
                 for (const piece of this.board.playerPieces) {
                     if (piece.king) {
@@ -44194,7 +44264,7 @@ const OLD_FAITHFUL_OPENING = {
         '24-19': {},
     },
     '10-15': {
-        '18-11': {
+        '18x11': {
             '7x16': {
                 '29-25': {},
             },
@@ -44359,14 +44429,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "PIECE_RADIUS": () => (/* binding */ PIECE_RADIUS),
 /* harmony export */   "OUTLINE_SIZE": () => (/* binding */ OUTLINE_SIZE),
 /* harmony export */   "MAX_DEPTH_MID": () => (/* binding */ MAX_DEPTH_MID),
-/* harmony export */   "MAX_DEPTH_END": () => (/* binding */ MAX_DEPTH_END)
+/* harmony export */   "MAX_DEPTH_END": () => (/* binding */ MAX_DEPTH_END),
+/* harmony export */   "MAX_DEPTH_END_4": () => (/* binding */ MAX_DEPTH_END_4)
 /* harmony export */ });
 const TILE_SIZE = 64;
 const HALF_TILE_SIZE = TILE_SIZE / 2;
 const PIECE_RADIUS = HALF_TILE_SIZE - 4;
 const OUTLINE_SIZE = 4;
-const MAX_DEPTH_MID = 9;
-const MAX_DEPTH_END = 26;
+const MAX_DEPTH_MID = 8;
+const MAX_DEPTH_END = 9;
+const MAX_DEPTH_END_4 = 22;
 
 
 /***/ }),
@@ -45779,6 +45851,9 @@ var _a;
 
 
 const board = new _classes_board__WEBPACK_IMPORTED_MODULE_2__["default"]('B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12');
+// const board = new Board('B:BK9,K10:WK18');
+// const board = new Board('B:BK23,K24:WK15');
+// const board = new Board('B:WK10,K15,K19:BK5,K27');
 const checkers = new _classes_checkers__WEBPACK_IMPORTED_MODULE_1__["default"](board);
 (_a = document.getElementById('checkers')) === null || _a === void 0 ? void 0 : _a.appendChild(checkers.app.view);
 const w = window;

@@ -4,7 +4,9 @@ import Piece from './piece';
 import Heuristic from './heuristic';
 
 import { Move } from './types';
-import { MAX_DEPTH_MID, MAX_DEPTH_END } from '../config/values';
+import {
+  MAX_DEPTH_MID, MAX_DEPTH_END, MAX_DEPTH_END_4
+} from '../config/values';
 import STATES from '../config/states';
 import DIRECTIONS from '../config/directions';
 import { AI_FIRST_OPENING, AI_SECOND_OPENING } from '../config/opening';
@@ -43,6 +45,7 @@ class AI {
   matingTree: MatingTree | undefined;
   mateMemo: { [key: string]: { node: MatingTree; depth: number; } } = {};
   opening: Opening = {};
+  repetitions: { [key: string]: boolean } = {};
 
   constructor(checkers: Checkers) {
     this.checkers = checkers;
@@ -260,7 +263,7 @@ class AI {
     this.board.playerTurn = !this.board.playerTurn;
   }
 
-  private quesceneSearch(
+  private quiescentSearch(
     alpha: number, beta: number,
     player: boolean
   ): number {
@@ -291,7 +294,7 @@ class AI {
             promoting: !piece.king && this.board.isTopEdge(moves[moves.length - 1]),
           };
           this._move(move);
-          val = Math.min(val, this.quesceneSearch(alpha, beta, false));
+          val = Math.min(val, this.quiescentSearch(alpha, beta, false));
           this._reverseMove(move);
 
           if (val <= alpha) return val;
@@ -309,7 +312,7 @@ class AI {
             promoting: !piece.king && this.board.isBottomEdge(moves[moves.length - 1]),
           };
           this._move(move);
-          val = Math.max(val, this.quesceneSearch(alpha, beta, true));
+          val = Math.max(val, this.quiescentSearch(alpha, beta, true));
           this._reverseMove(move);
 
           if (val >= beta) return val;
@@ -319,6 +322,13 @@ class AI {
     }
 
     return val;
+  }
+
+  private sortMoves(moves: Move[]) {
+    // average for player movements
+    moves.sort((m1, m2) => {
+      return m1.moves.length - m2.moves.length;
+    });
   }
 
   private negamax(depth: number, alpha: number, beta: number, color: number): number {
@@ -346,17 +356,12 @@ class AI {
       return -2000 * color;
 
     if (depth < 1)
-      return this.quesceneSearch(alpha, beta, player) * color;
+      return this.quiescentSearch(alpha, beta, player) * color;
 
     let max = -2000;
 
     const allMoves = this.getAllPossibleMoves(player);
-    allMoves.sort((a, b) => a.moves.length - b.moves.length);
-    // Prioritize moves to the center of the board
-    // allMoves.sort((m1, m2) =>
-    //   Math.abs(m1.ending.x - 3.5) + Math.abs(m1.ending.y - 3.5) -
-    //   Math.abs(m2.ending.x - 3.5) - Math.abs(m2.ending.y - 3.5)
-    // );
+    this.sortMoves(allMoves);
 
     this.treeWalk[state] = true;
     for (const moves of allMoves) {
@@ -443,9 +448,9 @@ class AI {
     }
 
     if (depth < 1) {
-      const mate = this.quesceneSearch(-Infinity, Infinity, player) > 999;
+      const mate = this.quiescentSearch(-Infinity, Infinity, player) > 999;
       node.count = mate ? 0 : MAX_DEPTH_END;
-      node.mate = true;
+      node.mate = mate;
       return node;
     }
 
@@ -568,16 +573,18 @@ class AI {
       }
     }
 
-    let depth = 0;
+    let depth = 0, count = 0;
     switch (this.checkers.state) {
     case STATES.MID:
       depth = MAX_DEPTH_MID;
       break;
     case STATES.END:
-      depth = Math.min(
-        MAX_DEPTH_MID,
-        MAX_DEPTH_END - this.board.aiPieces.length - this.board.playerPieces.length
-      );
+      count = this.board.aiPieces.length + this.board.playerPieces.length;
+      if (count < 5) {
+        depth = MAX_DEPTH_END_4;
+      }  else {
+        depth = MAX_DEPTH_END;
+      }
       break;
     }
 
