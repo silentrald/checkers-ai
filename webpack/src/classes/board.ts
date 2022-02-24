@@ -18,7 +18,7 @@ class Board {
   selectedPiece: Piece | null =  null;
   highlights: Highlight[] = [];
   jumpPieces: Piece[] = [];
-  tempCaptured: Piece[] = [];
+  captured: Piece[] = [];
 
   constructor(fen?: string) {
     // Init Grid
@@ -73,7 +73,7 @@ class Board {
     this.selectedPiece =  null;
     this.highlights = [];
     this.jumpPieces = [];
-    this.tempCaptured = [];
+    this.captured = [];
     this.grid = [];
     this.state = [];
 
@@ -550,7 +550,7 @@ class Board {
       current = this.getMiddle(current, pos);
 
       const captured = this.getCell(current) as Piece;
-      this.tempCaptured.push(captured);
+      this.captured.push(captured);
       if (captured.player) {
         this.playerPieces.splice(this.playerPieces.indexOf(captured), 1);
         if (captured.king)
@@ -609,7 +609,7 @@ class Board {
     for (const pos of positions) {
       current = this.getMiddle(current, pos);
 
-      const captured = this.tempCaptured.pop() as Piece;
+      const captured = this.captured.pop() as Piece;
       if (captured.player) {
         this.playerPieces.push(captured);
         if (captured.king)

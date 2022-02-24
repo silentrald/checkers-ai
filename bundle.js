@@ -41762,7 +41762,18 @@ class AI {
         this.heuristic = new _heuristic__WEBPACK_IMPORTED_MODULE_0__["default"](checkers);
     }
     setup() {
-        this.opening = this.board.playerTurn ? _config_opening__WEBPACK_IMPORTED_MODULE_4__.AI_SECOND_OPENING : _config_opening__WEBPACK_IMPORTED_MODULE_4__.AI_FIRST_OPENING;
+        this.opening = this.board.firstPlayerTurn ? _config_opening__WEBPACK_IMPORTED_MODULE_4__.AI_SECOND_OPENING : _config_opening__WEBPACK_IMPORTED_MODULE_4__.AI_FIRST_OPENING;
+    }
+    resetOpening() {
+        this.checkers.state = _config_states__WEBPACK_IMPORTED_MODULE_2__["default"].START;
+        this.opening = this.board.firstPlayerTurn ? _config_opening__WEBPACK_IMPORTED_MODULE_4__.AI_SECOND_OPENING : _config_opening__WEBPACK_IMPORTED_MODULE_4__.AI_FIRST_OPENING;
+        for (const move of this.checkers.moveStack) {
+            this.opening = this.opening[move.notation || ''];
+            if (this.opening === undefined) {
+                this.checkers.state = _config_states__WEBPACK_IMPORTED_MODULE_2__["default"].MID;
+                return;
+            }
+        }
     }
     searchAllPossibleJumps(piece, position, moves, output) {
         // TODO: Look into this
@@ -42155,7 +42166,6 @@ class AI {
             const move = this.searchOpening();
             if (move) {
                 this._move(move);
-                this.board.tempCaptured.splice(0);
                 this.checkers.pushToMoveStack(move);
                 return;
             }
@@ -42164,12 +42174,13 @@ class AI {
         if (this.matingTree) {
             const state = this.board.getState();
             const matingTree = this.matingTree.children.find((mt) => mt.state === state);
-            this.matingTree = matingTree.children[0];
-            if (this.matingTree) {
-                this._move(this.matingTree.move);
-                this.board.tempCaptured.splice(0);
-                this.checkers.pushToMoveStack(this.matingTree.move);
-                return;
+            if (matingTree) {
+                this.matingTree = matingTree.children[0];
+                if (this.matingTree) {
+                    this._move(this.matingTree.move);
+                    this.checkers.pushToMoveStack(this.matingTree.move);
+                    return;
+                }
             }
         }
         let depth = 0;
@@ -42186,7 +42197,6 @@ class AI {
         if (rootMoves.length === 1) {
             const bestMove = rootMoves[0];
             this._move(bestMove);
-            this.board.tempCaptured.splice(0);
             this.checkers.pushToMoveStack(bestMove);
             return;
         }
@@ -42230,7 +42240,6 @@ class AI {
             }
         }
         this._move(bestMove);
-        this.board.tempCaptured.splice(0);
         this.transpositionTable = {};
         this.heuristicMemo = {};
         this.checkers.pushToMoveStack(bestMove);
@@ -42272,7 +42281,7 @@ class Board {
         this.selectedPiece = null;
         this.highlights = [];
         this.jumpPieces = [];
-        this.tempCaptured = [];
+        this.captured = [];
         // Init Grid
         for (let i = 0; i < 32; i++) {
             this.state.push('_');
@@ -42322,7 +42331,7 @@ class Board {
         this.selectedPiece = null;
         this.highlights = [];
         this.jumpPieces = [];
-        this.tempCaptured = [];
+        this.captured = [];
         this.grid = [];
         this.state = [];
         const [turn, ais, players] = fen.split(':');
@@ -42704,7 +42713,7 @@ class Board {
         for (const pos of positions) {
             current = this.getMiddle(current, pos);
             const captured = this.getCell(current);
-            this.tempCaptured.push(captured);
+            this.captured.push(captured);
             if (captured.player) {
                 this.playerPieces.splice(this.playerPieces.indexOf(captured), 1);
                 if (captured.king)
@@ -42755,7 +42764,7 @@ class Board {
         let current = end;
         for (const pos of positions) {
             current = this.getMiddle(current, pos);
-            const captured = this.tempCaptured.pop();
+            const captured = this.captured.pop();
             if (captured.player) {
                 this.playerPieces.push(captured);
                 if (captured.king)
@@ -42838,6 +42847,7 @@ class Checkers {
         this.flipped = false;
         this.state = _config_states__WEBPACK_IMPORTED_MODULE_6__["default"].START;
         this.moveStack = [];
+        this.tempMoveStack = [];
         this.board = board;
         this.input = new _input__WEBPACK_IMPORTED_MODULE_2__["default"](this);
         this.ai = new _ai__WEBPACK_IMPORTED_MODULE_3__["default"](this);
@@ -42861,6 +42871,7 @@ class Checkers {
         this.inputting = true;
         this.jumping = false;
         this.moveStack = [];
+        this.tempMoveStack = [];
         this.ai.setup();
         // Setup the rotation
         this.flipped = this.board.flipped;
@@ -42876,6 +42887,54 @@ class Checkers {
     flip() {
         this.flipped = !this.flipped;
         this.graphics.transform.rotation = this.flipped ? Math.PI : 0;
+    }
+    undo() {
+        if (this.moveStack.length < 2)
+            return;
+        this.resetHighlights();
+        const move1 = this.popMoveStack();
+        if (move1.jumping) {
+            this.board.reverseJump(move1);
+        }
+        else {
+            this.board.reverseMove(move1);
+        }
+        this.tempMoveStack.push(move1);
+        const move2 = this.popMoveStack();
+        if (move2.jumping) {
+            this.board.reverseJump(move2);
+        }
+        else {
+            this.board.reverseMove(move2);
+        }
+        this.tempMoveStack.push(move2);
+        // Reconstruct Tree Opening
+        this.ai.resetOpening();
+        this.board.selectedPiece = null;
+        this.draw();
+        this.passToPlayer();
+    }
+    redo() {
+        if (this.tempMoveStack.length < 2)
+            return;
+        const move1 = this.tempMoveStack.pop();
+        if (move1.jumping) {
+            this.board.jump(move1);
+        }
+        else {
+            this.board.move(move1);
+        }
+        this.pushToMoveStack(move1);
+        const move2 = this.tempMoveStack.pop();
+        if (move2.jumping) {
+            this.board.jump(move2);
+        }
+        else {
+            this.board.move(move2);
+        }
+        this.pushToMoveStack(move2);
+        this.draw();
+        this.passToPlayer();
     }
     // Highlights
     resetHighlights() {
@@ -42936,6 +42995,16 @@ class Checkers {
     addNotationToMove(move) {
         move.notation = move.moves.map((val) => val + 1).join(move.jumping ? 'x' : '-');
     }
+    popMoveStack() {
+        const move = this.moveStack.pop();
+        const table = document.getElementById('move-notation');
+        const moves = this.moveStack.length >> 1;
+        const row = table.rows[moves + 1];
+        row.deleteCell(this.moveStack.length & 1);
+        if (row.cells.length === 0)
+            table.deleteRow(moves + 1);
+        return move;
+    }
     pushToMoveStack(move) {
         this.addNotationToMove(move);
         const table = document.getElementById('move-notation');
@@ -42957,7 +43026,6 @@ class Checkers {
         };
         if (move.jumping) {
             this.board.jump(move);
-            this.board.tempCaptured.splice(0);
             this.board.jumpPieces.splice(0);
             if (this.captureMove) {
                 this.captureMove.moves.push(position);
@@ -42984,6 +43052,7 @@ class Checkers {
             this.board.move(move);
             this.pushToMoveStack(move);
         }
+        this.tempMoveStack = [];
         this.board.playerTurn = false;
         this.board.selectedPiece = null;
         this.draw();
@@ -45715,6 +45784,12 @@ const checkers = new _classes_checkers__WEBPACK_IMPORTED_MODULE_1__["default"](b
 const w = window;
 w.checkers = checkers;
 w.board = board;
+w.undo = () => {
+    checkers.undo();
+};
+w.redo = () => {
+    checkers.redo();
+};
 w.flip = () => {
     checkers.flip();
 };

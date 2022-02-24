@@ -51,7 +51,20 @@ class AI {
   }
 
   setup() {
-    this.opening = this.board.playerTurn ? AI_SECOND_OPENING : AI_FIRST_OPENING;
+    this.opening = this.board.firstPlayerTurn ? AI_SECOND_OPENING : AI_FIRST_OPENING;
+  }
+
+  resetOpening() {
+    this.checkers.state = STATES.START;
+    this.opening = this.board.firstPlayerTurn ? AI_SECOND_OPENING : AI_FIRST_OPENING;
+
+    for (const move of this.checkers.moveStack) {
+      this.opening = this.opening[move.notation || ''];
+      if (this.opening === undefined) {
+        this.checkers.state = STATES.MID;
+        return;
+      }
+    }
   }
 
   private searchAllPossibleJumps(
@@ -535,8 +548,6 @@ class AI {
       const move = this.searchOpening();
       if (move) {
         this._move(move);
-        this.board.tempCaptured.splice(0);
-
         this.checkers.pushToMoveStack(move);
         return;
       }
@@ -547,13 +558,13 @@ class AI {
       const state = this.board.getState();
       const matingTree = this.matingTree.children.find((mt) => mt.state === state)!;
 
-      this.matingTree = matingTree.children[0];
-      if (this.matingTree) {
-        this._move(this.matingTree.move);
-        this.board.tempCaptured.splice(0);
-
-        this.checkers.pushToMoveStack(this.matingTree.move);
-        return;
+      if (matingTree) {
+        this.matingTree = matingTree.children[0];
+        if (this.matingTree) {
+          this._move(this.matingTree.move);
+          this.checkers.pushToMoveStack(this.matingTree.move);
+          return;
+        }
       }
     }
 
@@ -576,8 +587,6 @@ class AI {
     if (rootMoves.length === 1) {
       const bestMove = rootMoves[0];
       this._move(bestMove);
-      this.board.tempCaptured.splice(0);
-
       this.checkers.pushToMoveStack(bestMove);
       return;
     }
@@ -632,7 +641,6 @@ class AI {
     }
 
     this._move(bestMove);
-    this.board.tempCaptured.splice(0);
     this.transpositionTable = {};
     this.heuristicMemo = {};
 

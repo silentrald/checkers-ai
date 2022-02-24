@@ -10,6 +10,14 @@ const w = window as any;
 w.checkers = checkers;
 w.board = board;
 
+w.undo = () => {
+  checkers.undo();
+};
+
+w.redo = () => {
+  checkers.redo();
+};
+
 w.flip = () => {
   checkers.flip();
 };

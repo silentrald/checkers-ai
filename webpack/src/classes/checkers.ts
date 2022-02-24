@@ -24,6 +24,7 @@ class Checkers {
   state = STATES.START;
 
   moveStack: Move[] = [];
+  tempMoveStack: Move[] = [];
   captureMove: Move | undefined;
 
   constructor(board: Board) {
@@ -55,6 +56,7 @@ class Checkers {
     this.inputting = true;
     this.jumping = false;
     this.moveStack = [];
+    this.tempMoveStack = [];
 
     this.ai.setup();
 
@@ -74,6 +76,60 @@ class Checkers {
   flip() {
     this.flipped = !this.flipped;
     this.graphics.transform.rotation = this.flipped ? Math.PI : 0;
+  }
+
+  undo() {
+    if (this.moveStack.length < 2)
+      return;
+
+    this.resetHighlights();
+
+    const move1 = this.popMoveStack();
+    if (move1.jumping) {
+      this.board.reverseJump(move1);
+    } else {
+      this.board.reverseMove(move1);
+    }
+    this.tempMoveStack.push(move1);
+
+    const move2 = this.popMoveStack();
+    if (move2.jumping) {
+      this.board.reverseJump(move2);
+    } else {
+      this.board.reverseMove(move2);
+    }
+    this.tempMoveStack.push(move2);
+
+    // Reconstruct Tree Opening
+    this.ai.resetOpening();
+    this.board.selectedPiece = null;
+
+    this.draw();
+    this.passToPlayer();
+  }
+
+  redo() {
+    if (this.tempMoveStack.length < 2)
+      return;
+
+    const move1 = this.tempMoveStack.pop() as Move;
+    if (move1.jumping) {
+      this.board.jump(move1);
+    } else {
+      this.board.move(move1);
+    }
+    this.pushToMoveStack(move1);
+
+    const move2 = this.tempMoveStack.pop() as Move;
+    if (move2.jumping) {
+      this.board.jump(move2);
+    } else {
+      this.board.move(move2);
+    }
+    this.pushToMoveStack(move2);
+
+    this.draw();
+    this.passToPlayer();
   }
 
   // Highlights
@@ -144,6 +200,19 @@ class Checkers {
     move.notation = move.moves.map((val) => val + 1).join(move.jumping ? 'x' : '-');
   }
 
+  popMoveStack(): Move {
+    const move = this.moveStack.pop() as Move;
+
+    const table = document.getElementById('move-notation')! as HTMLTableElement;
+    const moves = this.moveStack.length >> 1;
+    const row = table.rows[moves + 1];
+    row.deleteCell(this.moveStack.length & 1);
+    if (row.cells.length === 0)
+      table.deleteRow(moves + 1);
+
+    return move;
+  }
+
   pushToMoveStack(move: Move) {
     this.addNotationToMove(move);
 
@@ -170,7 +239,6 @@ class Checkers {
 
     if (move.jumping) {
       this.board.jump(move);
-      this.board.tempCaptured.splice(0);
       this.board.jumpPieces.splice(0);
 
       if (this.captureMove) {
@@ -200,6 +268,7 @@ class Checkers {
       this.pushToMoveStack(move);
     }
 
+    this.tempMoveStack = [];
     this.board.playerTurn = false;
     this.board.selectedPiece = null;
     this.draw();
