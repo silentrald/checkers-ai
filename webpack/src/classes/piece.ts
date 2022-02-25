@@ -9,8 +9,8 @@ import {
 import COLORS from '../config/colors';
 import Board from './board';
 
-const blackKing = Texture.from('/img/black-king.png');
-const whiteKing = Texture.from('/img/white-king.png');
+const blackKing = Texture.from('img/black-king.png');
+const whiteKing = Texture.from('img/white-king.png');
 
 interface PieceConfig {
   pos: number;
