@@ -43682,8 +43682,8 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-const blackKing = pixi_js__WEBPACK_IMPORTED_MODULE_0__.Texture.from('/img/black-king.png');
-const whiteKing = pixi_js__WEBPACK_IMPORTED_MODULE_0__.Texture.from('/img/white-king.png');
+const blackKing = pixi_js__WEBPACK_IMPORTED_MODULE_0__.Texture.from('img/black-king.png');
+const whiteKing = pixi_js__WEBPACK_IMPORTED_MODULE_0__.Texture.from('img/white-king.png');
 class Piece extends pixi_js__WEBPACK_IMPORTED_MODULE_0__.Container {
     constructor(config) {
         super();
