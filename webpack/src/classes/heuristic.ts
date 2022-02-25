@@ -127,7 +127,7 @@ class Heuristic {
         }
 
         // incentivize trading pieces
-        score += (12 - playerCount - aiCount) * 10;
+        score += (7 - playerCount) * 10;
 
         // Dog pattern check
         if (
@@ -155,7 +155,7 @@ class Heuristic {
         }
 
         // Dont trade
-        score += (playerCount + aiCount) * 10;
+        score += aiCount * 10;
 
         // Dog pattern check
         if (

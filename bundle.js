@@ -43492,7 +43492,7 @@ class Heuristic {
                         }
                     }
                     // incentivize trading pieces
-                    score += (12 - playerCount - aiCount) * 10;
+                    score += (7 - playerCount) * 10;
                     // Dog pattern check
                     if (this.board.isDogPattern(_config_directions__WEBPACK_IMPORTED_MODULE_0__["default"].BOTTOM_RIGHT) ||
                         this.board.isDogPattern(_config_directions__WEBPACK_IMPORTED_MODULE_0__["default"].TOP_LEFT)) {
@@ -43520,7 +43520,7 @@ class Heuristic {
                         }
                     }
                     // Dont trade
-                    score += (playerCount + aiCount) * 10;
+                    score += aiCount * 10;
                     // Dog pattern check
                     if (this.board.isDogPattern(_config_directions__WEBPACK_IMPORTED_MODULE_0__["default"].BOTTOM_RIGHT) ||
                         this.board.isDogPattern(_config_directions__WEBPACK_IMPORTED_MODULE_0__["default"].TOP_LEFT)) {
