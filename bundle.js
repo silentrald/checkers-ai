@@ -43024,6 +43024,8 @@ class Checkers {
     undo() {
         if (this.moveStack.length < 2)
             return;
+        if (this.board.selectedPiece)
+            this.board.selectedPiece.toggleSelected(false);
         this.resetHighlights();
         const move1 = this.popMoveStack();
         if (move1.jumping) {
@@ -43049,6 +43051,9 @@ class Checkers {
     redo() {
         if (this.tempMoveStack.length < 2)
             return;
+        if (this.board.selectedPiece)
+            this.board.selectedPiece.toggleSelected(false);
+        this.resetHighlights();
         const move1 = this.tempMoveStack.pop();
         if (move1.jumping) {
             this.board.jump(move1);
@@ -43200,6 +43205,8 @@ class Checkers {
     }
     // Turns
     setupTurn() {
+        for (const piece of this.board.jumpPieces)
+            piece.toggleJumping(false);
         this.board.jumpPieces.splice(0);
         this.board.jumpPieces = this.getForceJumps(this.board.playerTurn);
         // Change State
