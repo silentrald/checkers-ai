@@ -1,14 +1,13 @@
 import './main.css';
 import Checkers from './classes/checkers';
-import Board from './classes/board';
+import './img/black-king.png';
+import './img/white-king.png';
 
-const board = new Board('B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12');
-// const board = new Board('B:BK9,K10:WK18');
-// const board = new Board('B:BK23,K24:WK15');
-// const board = new Board('B:WK10,K15,K19:BK5,K27');
-
-const checkers = new Checkers(board);
+const checkers = new Checkers();
+const board = checkers.board;
 document.getElementById('checkers')?.appendChild(checkers.app.view);
+
+checkers.newGame();
 
 const w = window as any;
 w.checkers = checkers;
@@ -33,23 +32,16 @@ function clearMoveList() {
 }
 
 w.playBlack = () => {
+  board.playerFirst = true;
   board.setBoard('B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12');
-  board.firstPlayerTurn = true;
-  board.playerTurn = true;
-  board.flipped = false;
-
   clearMoveList();
 
   checkers.newGame();
 };
 
 w.playWhite = () => {
+  board.playerFirst = false;
   board.setBoard('B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12');
-  board.firstPlayerTurn = false;
-  board.playerTurn = false;
-  board.flipped = false;
-  board.switch();
-
   clearMoveList();
 
   checkers.newGame();

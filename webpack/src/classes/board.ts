@@ -1,16 +1,24 @@
 import Piece from './piece';
 import Highlight from './highlight';
+import {
+  Container, Graphics, Ticker
+} from 'pixi.js';
 
-import { GridState, Move } from './types';
+import {
+  GridState, Move, Vector2d
+} from './types';
+
 import DIRECTIONS from '../config/directions';
+import COLORS from '../config/colors';
+import { HALF_TILE_SIZE, TILE_SIZE } from '../config/values';
+import Input from './input';
 
-class Board {
+class Board extends Container {
   state: string[] = [];
   grid: GridState[] = [];
 
-  firstPlayerTurn = true;
+  playerFirst = true;
   playerTurn = true;
-  flipped = false;
   playerKings = 0;
   aiKings = 0;
   playerPieces: Piece[] = [];
@@ -20,15 +28,81 @@ class Board {
   jumpPieces: Piece[] = [];
   captured: Piece[] = [];
 
-  constructor(fen?: string) {
+  // Input system
+  input: Input | undefined;
+
+  // Draw
+  boardGraphics: Graphics = new Graphics();
+
+  constructor(
+    fen = 'B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12'
+  ) {
+    super();
+
+    this.setup();
+    this.setBoard(fen);
+  }
+
+  private setup() {
+    // Draw Graphics
+    this.boardGraphics.beginFill(COLORS.BROWN);
+    for (let y = 0; y < 8; y++) {
+      for (let x = y & 1 ^ 1; x < 8; x += 2) {
+        this.boardGraphics.drawRect(
+          x * TILE_SIZE, y * TILE_SIZE,
+          TILE_SIZE, TILE_SIZE
+        );
+      }
+    }
+    this.boardGraphics.endFill();
+    this.addChild(this.boardGraphics);
+
+    this.pivot.x = TILE_SIZE * 4;
+    this.pivot.y = TILE_SIZE * 4;
+    this.x = TILE_SIZE * 4;
+    this.y = TILE_SIZE * 4;
+
     // Init Grid
     for (let i = 0; i < 32; i++) {
       this.state.push('_');
       this.grid.push(null);
     }
 
-    if (!fen) return;
-    this.setBoard(fen);
+    // Create 4 highlights
+    for (let i = 0; i < 4; i++) {
+      const highlight = new Highlight({
+        pos: -1,
+        board: this,
+      });
+      highlight.hide();
+      this.highlights.push(highlight);
+    }
+  }
+
+  private reset() {
+    this.playerKings = 0;
+    this.aiKings = 0;
+    this.playerPieces = [];
+    this.aiPieces = [];
+    this.selectedPiece =  null;
+    this.jumpPieces = [];
+    this.captured = [];
+    this.grid = [];
+    this.state = [];
+
+    // Init Grid
+    for (let i = 0; i < 32; i++) {
+      this.state.push('_');
+      this.grid.push(null);
+    }
+
+    if (this.children.length > 1) {
+      this.removeChildren(1);
+    }
+
+    for (const highlight of this.highlights) {
+      highlight.hide();
+    }
   }
 
   setCell(position: number, val: GridState) {
@@ -63,71 +137,81 @@ class Board {
     return this.state.join('') + '-' + (this.playerTurn ? 'P' : 'A');
   }
 
+  // input
+  mousedownPiece(ev: any, piece: Piece) {
+    if (!this.input) return;
+    this.input.mousedownPiece(ev, piece);
+  }
+
+  mousedownHighlight(ev: any, highlight: Highlight) {
+    if (!this.input) return;
+    this.input.mousedownHighlight(ev, highlight);
+  }
+
   // W - Ai
   // B - Player
   setBoard(fen: string) {
-    this.playerKings = 0;
-    this.aiKings = 0;
-    this.playerPieces = [];
-    this.aiPieces = [];
-    this.selectedPiece =  null;
-    this.highlights = [];
-    this.jumpPieces = [];
-    this.captured = [];
-    this.grid = [];
-    this.state = [];
+    this.reset();
 
     const [
       turn,
-      ais,
-      players
+      whitePieces,
+      blackPieces
     ] = fen.split(':');
     this.playerTurn = turn === 'B';
 
-    let position = 0, king = false;
-    for (const p of ais.slice(1).split(',')) {
-      if (p[0] === 'K') {
-        position = +p.slice(1) - 1;
-        king = true;
-        this.aiKings++;
-      } else {
-        position = +p - 1;
-        king = false;
-      }
+    let pos = 0, king = false;
+    const first = this.playerFirst ? this.playerPieces : this.aiPieces;
+    const second = this.playerFirst ? this.aiPieces : this.playerPieces;
 
-      const piece = new Piece(position, false, king);
-      this.aiPieces.push(piece);
-      this.setCell(position, piece);
-    }
-
-    for (const p of players.slice(1).split(',')) {
+    for (const p of blackPieces.slice(1).split(',')) {
       if (p[0] === 'K') {
-        position = +p.slice(1) - 1;
+        pos = +p.slice(1) - 1;
         king = true;
         this.playerKings++;
       } else {
-        position = +p - 1;
+        pos = +p - 1;
         king = false;
       }
 
-      const piece = new Piece(position, true, king);
-      this.playerPieces.push(piece);
-      this.setCell(position, piece);
+      const piece = new Piece({
+        pos,
+        player: this.playerFirst,
+        black: true,
+        king,
+        board: this,
+      });
+      first.push(piece);
+      this.setCell(pos, piece);
+      this.addChild(piece);
     }
-  }
 
-  switch() {
-    this.flipped = !this.flipped;
-    const temp = this.aiPieces;
-    this.aiPieces = this.playerPieces;
-    this.playerPieces = temp;
+    for (const p of whitePieces.slice(1).split(',')) {
+      if (p[0] === 'K') {
+        pos = +p.slice(1) - 1;
+        king = true;
+        this.aiKings++;
+      } else {
+        pos = +p - 1;
+        king = false;
+      }
 
-    this.aiPieces.map((piece) => {
-      piece.player = !piece.player;
-    });
-    this.playerPieces.map((piece) => {
-      piece.player = !piece.player;
-    });
+      const piece = new Piece({
+        pos,
+        player: !this.playerFirst,
+        black: false,
+        king,
+        board: this,
+      });
+      second.push(piece);
+      this.setCell(pos, piece);
+      this.addChild(piece);
+    }
+
+    // Add the highlights to the board
+    for (const highlight of this.highlights) {
+      this.addChild(highlight);
+    }
   }
 
   // TODO: Get the fen string
@@ -141,27 +225,27 @@ class Board {
   }
 
   getTopLeft(position: number): number {
-    return this.flipped ?
-      position - ((position >> 2) & 1 ? 5 : 4) : // br
-      position + ((position >> 2) & 1 ? 4 : 5);  // tl
+    return this.playerFirst ?
+      position + ((position >> 2) & 1 ? 4 : 5) : // tl
+      position - ((position >> 2) & 1 ? 5 : 4);  // br
   }
 
   getTopRight(position: number): number {
-    return this.flipped ?
-      position - ((position >> 2) & 1 ? 4 : 3) : // bl
-      position + ((position >> 2) & 1 ? 3 : 4);  // tr
-  }
-
-  getBottomLeft(position: number): number {
-    return this.flipped ?
+    return this.playerFirst ?
       position + ((position >> 2) & 1 ? 3 : 4) : // tr
       position - ((position >> 2) & 1 ? 4 : 3);  // bl
   }
 
+  getBottomLeft(position: number): number {
+    return this.playerFirst ?
+      position - ((position >> 2) & 1 ? 4 : 3) : // bl
+      position + ((position >> 2) & 1 ? 3 : 4);  // tr
+  }
+
   getBottomRight(position: number): number {
-    return this.flipped ?
-      position + ((position >> 2) & 1 ? 4 : 5) : // tl
-      position - ((position >> 2) & 1 ? 5 : 4);  // br
+    return this.playerFirst ?
+      position - ((position >> 2) & 1 ? 5 : 4) : // br
+      position + ((position >> 2) & 1 ? 4 : 5);  // tl
   }
 
   getMiddle(start: number, end: number): number {
@@ -169,19 +253,19 @@ class Board {
   }
 
   getTopLeftJump(position: number): number {
-    return this.flipped ? position - 9 : position + 9;
+    return this.playerFirst ? position + 9 : position - 9;
   }
 
   getTopRightJump(position: number): number {
-    return this.flipped ? position - 7 : position + 7;
+    return this.playerFirst ? position + 7 : position - 7;
   }
 
   getBottomLeftJump(position: number): number {
-    return this.flipped ? position + 7 : position - 7;
+    return this.playerFirst ? position - 7 : position + 7;
   }
 
   getBottomRightJump(position: number): number {
-    return this.flipped ? position + 9 : position - 9;
+    return this.playerFirst ? position - 9 : position + 9;
   }
 
   // Move Check
@@ -190,51 +274,51 @@ class Board {
   }
 
   isTopEdge(position: number): boolean {
-    return this.flipped ?
-      position < 4 : // b
-      position > 27; // t
-  }
-
-  isTopJumpEdge(position: number): boolean {
-    return this.flipped ?
-      position < 8 : // b
-      position > 23; // t
-  }
-
-  isBottomEdge(position: number): boolean {
-    return this.flipped ?
+    return this.playerFirst ?
       position > 27 : // t
       position < 4;   // b
   }
 
-  isBottomJumpEdge(position: number): boolean {
-    return this.flipped ?
+  isTopJumpEdge(position: number): boolean {
+    return this.playerFirst ?
       position > 23 : // t
       position < 8;   // b
   }
 
+  isBottomEdge(position: number): boolean {
+    return this.playerFirst ?
+      position < 4 : // b
+      position > 27; // t
+  }
+
+  isBottomJumpEdge(position: number): boolean {
+    return this.playerFirst ?
+      position < 8 : // b
+      position > 23; // t
+  }
+
   isLeftEdge(position: number): boolean {
-    return this.flipped ?
-      position % 8 === 4 : // r
-      position % 8 === 3;  // l
-  }
-
-  isLeftJumpEdge(position: number): boolean {
-    return this.flipped ?
-      position % 4 === 0 : // r
-      position % 4 === 3;  // l
-  }
-
-  isRightEdge(position: number): boolean {
-    return this.flipped ?
+    return this.playerFirst ?
       position % 8 === 3 : // l
       position % 8 === 4;  // r
   }
 
-  isRightJumpEdge(position: number): boolean {
-    return this.flipped ?
+  isLeftJumpEdge(position: number): boolean {
+    return this.playerFirst ?
       position % 4 === 3 : // l
       position % 4 === 0;  // r
+  }
+
+  isRightEdge(position: number): boolean {
+    return this.playerFirst ?
+      position % 8 === 4 : // r
+      position % 8 === 3;  // l
+  }
+
+  isRightJumpEdge(position: number): boolean {
+    return this.playerFirst ?
+      position % 4 === 0 : // r
+      position % 4 === 3;  // l
   }
 
   isEmpty(position: number): boolean {
@@ -541,7 +625,7 @@ class Board {
     if (piece.king) return;
 
     if (promoting) {
-      piece.king = true;
+      piece.toggleKing(true);
       if (piece.player) {
         this.playerKings++;
       } else {
@@ -556,9 +640,18 @@ class Board {
     const piece = this.getCell(start) as Piece;
     this.promote(piece, !!move.promoting);
 
-    piece.setPosition(end);
+    piece.setPos(end);
     this.setCell(start, null);
     this.setCell(end, piece);
+  }
+
+  private convertPosToVector(position: number): Vector2d {
+    const y = 7 - (position >> 2);
+    const x = (3 - (position % 4) << 1) + ((y + 1) & 1);
+    return {
+      x: x * TILE_SIZE + HALF_TILE_SIZE,
+      y: y * TILE_SIZE + HALF_TILE_SIZE,
+    };
   }
 
   jump(move: Move) {
@@ -569,7 +662,7 @@ class Board {
     const end = positions[positions.length - 1];
     this.promote(piece, !!move.promoting);
 
-    piece.setPosition(end);
+    piece.setPos(end);
     this.setCell(start, null);
     this.setCell(end, piece);
 
@@ -579,6 +672,7 @@ class Board {
       current = this.getMiddle(current, pos);
 
       const captured = this.getCell(current) as Piece;
+      captured.hide();
       this.captured.push(captured);
       if (captured.player) {
         this.playerPieces.splice(this.playerPieces.indexOf(captured), 1);
@@ -597,7 +691,7 @@ class Board {
 
   demote(piece: Piece, promoting: boolean) {
     if (promoting) {
-      piece.king = false;
+      piece.toggleKing(false);
       if (piece.player) {
         this.playerKings--;
       } else {
@@ -612,7 +706,7 @@ class Board {
     const piece = this.getCell(end) as Piece;
     this.demote(piece, !!move.promoting);
 
-    piece.setPosition(start);
+    piece.setPos(start);
     this.setCell(end, null);
     this.setCell(start, piece);
   }
@@ -626,7 +720,7 @@ class Board {
     // Move Current Piece
     const piece = this.getCell(end) as Piece;
     this.demote(piece, !!move.promoting);
-    piece.setPosition(start);
+    piece.setPos(start);
     this.setCell(end, null);
     this.setCell(start, piece);
 
@@ -636,6 +730,7 @@ class Board {
       current = this.getMiddle(current, pos);
 
       const captured = this.captured.pop() as Piece;
+      captured.show();
       if (captured.player) {
         this.playerPieces.push(captured);
         if (captured.king)

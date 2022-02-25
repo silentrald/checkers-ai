@@ -5,16 +5,14 @@ const path = require('path');
 module.exports = {
   mode: 'development',
 
-  plugins: [
-    new HtmlWebpackPlugin({
-      template: './src/index.html',
-      title: 'Checkers AI',
-      filename: 'index.html',
-      inject: 'body',
-      scriptLoading: 'blocking',
-    }),
-    new MiniCssExtractPlugin()
-  ],
+  plugins: [ new HtmlWebpackPlugin({
+    template: './src/index.html',
+    title: 'Checkers AI',
+    filename: 'index.html',
+    inject: 'body',
+    scriptLoading: 'blocking',
+  }),
+  new MiniCssExtractPlugin() ],
 
   module: {
     rules: [
@@ -25,7 +23,7 @@ module.exports = {
           loader: 'ts-loader',
         },
       }, {
-        test: /\.css$/i,
+        test: /\.css$/,
         use: [
           MiniCssExtractPlugin.loader,
           {
@@ -36,6 +34,16 @@ module.exports = {
           },
           'postcss-loader'
         ],
+      }, {
+        test: /\.png$/,
+        use: [ {
+          loader: 'file-loader',
+          options: {
+            name: '[name].[ext]',
+            outputPath: 'img/',
+            publicPath: 'img/',
+          },
+        } ],
       }
     ],
   },
@@ -43,15 +51,13 @@ module.exports = {
   devtool: false,
 
   resolve: {
-    extensions: [
-      '.ts', '.js'
-    ],
+    extensions: [ '.ts', '.js' ],
   },
 
   devServer: {
     static: {
       directory: path.join(
-        path.dirname(__dirname)
+        path.dirname(__dirname), 'img'
       ),
     },
     port: 3000,

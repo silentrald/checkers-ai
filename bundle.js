@@ -40537,6 +40537,36 @@ if (true) {
 
 /***/ }),
 
+/***/ "./src/img/black-king.png":
+/*!********************************!*\
+  !*** ./src/img/black-king.png ***!
+  \********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("img/black-king.png");
+
+/***/ }),
+
+/***/ "./src/img/white-king.png":
+/*!********************************!*\
+  !*** ./src/img/white-king.png ***!
+  \********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("img/white-king.png");
+
+/***/ }),
+
 /***/ "./node_modules/ismobilejs/esm/index.js":
 /*!**********************************************!*\
   !*** ./node_modules/ismobilejs/esm/index.js ***!
@@ -41763,11 +41793,11 @@ class AI {
         this.heuristic = new _heuristic__WEBPACK_IMPORTED_MODULE_0__["default"](checkers);
     }
     setup() {
-        this.opening = this.board.firstPlayerTurn ? _config_opening__WEBPACK_IMPORTED_MODULE_4__.AI_SECOND_OPENING : _config_opening__WEBPACK_IMPORTED_MODULE_4__.AI_FIRST_OPENING;
+        this.opening = this.board.playerFirst ? _config_opening__WEBPACK_IMPORTED_MODULE_4__.AI_SECOND_OPENING : _config_opening__WEBPACK_IMPORTED_MODULE_4__.AI_FIRST_OPENING;
     }
     resetOpening() {
         this.checkers.state = _config_states__WEBPACK_IMPORTED_MODULE_2__["default"].START;
-        this.opening = this.board.firstPlayerTurn ? _config_opening__WEBPACK_IMPORTED_MODULE_4__.AI_SECOND_OPENING : _config_opening__WEBPACK_IMPORTED_MODULE_4__.AI_FIRST_OPENING;
+        this.opening = this.board.playerFirst ? _config_opening__WEBPACK_IMPORTED_MODULE_4__.AI_SECOND_OPENING : _config_opening__WEBPACK_IMPORTED_MODULE_4__.AI_FIRST_OPENING;
         for (const move of this.checkers.moveStack) {
             this.opening = this.opening[move.notation || ''];
             if (this.opening === undefined) {
@@ -41779,11 +41809,11 @@ class AI {
     searchAllPossibleJumps(piece, position, moves, output) {
         // TODO: Look into this
         const move = {
-            moves: [piece.position, position],
+            moves: [piece.pos, position],
             jumping: true,
             promoting: !piece.king && (piece.player ?
-                this.board.isTopEdge(piece.position) :
-                this.board.isBottomEdge(piece.position)),
+                this.board.isTopEdge(piece.pos) :
+                this.board.isBottomEdge(piece.pos)),
         };
         this.board.jump(move);
         moves.push(position);
@@ -41806,27 +41836,27 @@ class AI {
         const output = [];
         if (piece.player) {
             if (piece.king) {
-                if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_LEFT, false))
-                    this.searchAllPossibleJumps(piece, this.board.getBottomLeftJump(piece.position), moves, output);
-                if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_RIGHT, false))
-                    this.searchAllPossibleJumps(piece, this.board.getBottomRightJump(piece.position), moves, output);
+                if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_LEFT, false))
+                    this.searchAllPossibleJumps(piece, this.board.getBottomLeftJump(piece.pos), moves, output);
+                if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_RIGHT, false))
+                    this.searchAllPossibleJumps(piece, this.board.getBottomRightJump(piece.pos), moves, output);
             }
-            if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_LEFT, false))
-                this.searchAllPossibleJumps(piece, this.board.getTopLeftJump(piece.position), moves, output);
-            if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_RIGHT, false))
-                this.searchAllPossibleJumps(piece, this.board.getTopRightJump(piece.position), moves, output);
+            if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_LEFT, false))
+                this.searchAllPossibleJumps(piece, this.board.getTopLeftJump(piece.pos), moves, output);
+            if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_RIGHT, false))
+                this.searchAllPossibleJumps(piece, this.board.getTopRightJump(piece.pos), moves, output);
         }
         else {
             if (piece.king) {
-                if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_LEFT, true))
-                    this.searchAllPossibleJumps(piece, this.board.getTopLeftJump(piece.position), moves, output);
-                if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_RIGHT, true))
-                    this.searchAllPossibleJumps(piece, this.board.getTopRightJump(piece.position), moves, output);
+                if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_LEFT, true))
+                    this.searchAllPossibleJumps(piece, this.board.getTopLeftJump(piece.pos), moves, output);
+                if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_RIGHT, true))
+                    this.searchAllPossibleJumps(piece, this.board.getTopRightJump(piece.pos), moves, output);
             }
-            if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_LEFT, true))
-                this.searchAllPossibleJumps(piece, this.board.getBottomLeftJump(piece.position), moves, output);
-            if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_RIGHT, true))
-                this.searchAllPossibleJumps(piece, this.board.getBottomRightJump(piece.position), moves, output);
+            if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_LEFT, true))
+                this.searchAllPossibleJumps(piece, this.board.getBottomLeftJump(piece.pos), moves, output);
+            if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_RIGHT, true))
+                this.searchAllPossibleJumps(piece, this.board.getBottomRightJump(piece.pos), moves, output);
         }
         return output;
     }
@@ -41835,7 +41865,7 @@ class AI {
         const capturePieces = this.checkers.getForceJumps(player);
         if (capturePieces.length > 0) {
             for (const piece of capturePieces) {
-                const allMoves = this.getAllPossibleJump(piece, [piece.position]);
+                const allMoves = this.getAllPossibleJump(piece, [piece.pos]);
                 for (const moves of allMoves) {
                     rootMoves.push({
                         moves,
@@ -41851,30 +41881,30 @@ class AI {
             let pos = 0;
             for (const piece of this.board.playerPieces) {
                 if (piece.king) {
-                    if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_LEFT)) {
-                        pos = this.board.getBottomLeft(piece.position);
+                    if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_LEFT)) {
+                        pos = this.board.getBottomLeft(piece.pos);
                         rootMoves.push({
-                            moves: [piece.position, pos],
+                            moves: [piece.pos, pos],
                         });
                     }
-                    if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_RIGHT)) {
-                        pos = this.board.getBottomRight(piece.position);
+                    if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_RIGHT)) {
+                        pos = this.board.getBottomRight(piece.pos);
                         rootMoves.push({
-                            moves: [piece.position, pos],
+                            moves: [piece.pos, pos],
                         });
                     }
                 }
-                if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_LEFT)) {
-                    pos = this.board.getTopLeft(piece.position);
+                if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_LEFT)) {
+                    pos = this.board.getTopLeft(piece.pos);
                     rootMoves.push({
-                        moves: [piece.position, pos],
+                        moves: [piece.pos, pos],
                         promoting: !piece.king && this.board.isTopEdge(pos),
                     });
                 }
-                if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_RIGHT)) {
-                    pos = this.board.getTopRight(piece.position);
+                if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_RIGHT)) {
+                    pos = this.board.getTopRight(piece.pos);
                     rootMoves.push({
-                        moves: [piece.position, pos],
+                        moves: [piece.pos, pos],
                         promoting: !piece.king && this.board.isTopEdge(pos),
                     });
                 }
@@ -41884,30 +41914,30 @@ class AI {
             let pos = 0;
             for (const piece of this.board.aiPieces) {
                 if (piece.king) {
-                    if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_LEFT)) {
-                        pos = this.board.getTopLeft(piece.position);
+                    if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_LEFT)) {
+                        pos = this.board.getTopLeft(piece.pos);
                         rootMoves.push({
-                            moves: [piece.position, pos],
+                            moves: [piece.pos, pos],
                         });
                     }
-                    if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_RIGHT)) {
-                        pos = this.board.getTopRight(piece.position);
+                    if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_RIGHT)) {
+                        pos = this.board.getTopRight(piece.pos);
                         rootMoves.push({
-                            moves: [piece.position, pos],
+                            moves: [piece.pos, pos],
                         });
                     }
                 }
-                if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_LEFT)) {
-                    pos = this.board.getBottomLeft(piece.position);
+                if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_LEFT)) {
+                    pos = this.board.getBottomLeft(piece.pos);
                     rootMoves.push({
-                        moves: [piece.position, pos],
+                        moves: [piece.pos, pos],
                         promoting: !piece.king && this.board.isBottomEdge(pos),
                     });
                 }
-                if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_RIGHT)) {
-                    pos = this.board.getBottomRight(piece.position);
+                if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_RIGHT)) {
+                    pos = this.board.getBottomRight(piece.pos);
                     rootMoves.push({
-                        moves: [piece.position, pos],
+                        moves: [piece.pos, pos],
                         promoting: !piece.king && this.board.isBottomEdge(pos),
                     });
                 }
@@ -41950,7 +41980,7 @@ class AI {
         if (player) { // Player
             val = Infinity;
             for (const piece of capturePieces) {
-                const captureMoves = this.getAllPossibleJump(piece, [piece.position]);
+                const captureMoves = this.getAllPossibleJump(piece, [piece.pos]);
                 for (const moves of captureMoves) {
                     const move = {
                         moves,
@@ -41969,7 +41999,7 @@ class AI {
         else { // AI
             val = -Infinity;
             for (const piece of capturePieces) {
-                const captureMoves = this.getAllPossibleJump(piece, [piece.position]);
+                const captureMoves = this.getAllPossibleJump(piece, [piece.pos]);
                 for (const moves of captureMoves) {
                     const move = {
                         moves,
@@ -42271,17 +42301,23 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _piece__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./piece */ "./src/classes/piece.ts");
 /* harmony import */ var _highlight__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./highlight */ "./src/classes/highlight.ts");
-/* harmony import */ var _config_directions__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../config/directions */ "./src/config/directions.ts");
+/* harmony import */ var pixi_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! pixi.js */ "./node_modules/pixi.js/dist/esm/pixi.js");
+/* harmony import */ var _config_directions__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../config/directions */ "./src/config/directions.ts");
+/* harmony import */ var _config_colors__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../config/colors */ "./src/config/colors.ts");
+/* harmony import */ var _config_values__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../config/values */ "./src/config/values.ts");
 
 
 
-class Board {
-    constructor(fen) {
+
+
+
+class Board extends pixi_js__WEBPACK_IMPORTED_MODULE_2__.Container {
+    constructor(fen = 'B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12') {
+        super();
         this.state = [];
         this.grid = [];
-        this.firstPlayerTurn = true;
+        this.playerFirst = true;
         this.playerTurn = true;
-        this.flipped = false;
         this.playerKings = 0;
         this.aiKings = 0;
         this.playerPieces = [];
@@ -42290,14 +42326,61 @@ class Board {
         this.highlights = [];
         this.jumpPieces = [];
         this.captured = [];
+        // Draw
+        this.boardGraphics = new pixi_js__WEBPACK_IMPORTED_MODULE_2__.Graphics();
+        this.setup();
+        this.setBoard(fen);
+    }
+    setup() {
+        // Draw Graphics
+        this.boardGraphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].BROWN);
+        for (let y = 0; y < 8; y++) {
+            for (let x = y & 1 ^ 1; x < 8; x += 2) {
+                this.boardGraphics.drawRect(x * _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE, y * _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE, _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE, _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE);
+            }
+        }
+        this.boardGraphics.endFill();
+        this.addChild(this.boardGraphics);
+        this.pivot.x = _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE * 4;
+        this.pivot.y = _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE * 4;
+        this.x = _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE * 4;
+        this.y = _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE * 4;
         // Init Grid
         for (let i = 0; i < 32; i++) {
             this.state.push('_');
             this.grid.push(null);
         }
-        if (!fen)
-            return;
-        this.setBoard(fen);
+        // Create 4 highlights
+        for (let i = 0; i < 4; i++) {
+            const highlight = new _highlight__WEBPACK_IMPORTED_MODULE_1__["default"]({
+                pos: -1,
+                board: this,
+            });
+            highlight.hide();
+            this.highlights.push(highlight);
+        }
+    }
+    reset() {
+        this.playerKings = 0;
+        this.aiKings = 0;
+        this.playerPieces = [];
+        this.aiPieces = [];
+        this.selectedPiece = null;
+        this.jumpPieces = [];
+        this.captured = [];
+        this.grid = [];
+        this.state = [];
+        // Init Grid
+        for (let i = 0; i < 32; i++) {
+            this.state.push('_');
+            this.grid.push(null);
+        }
+        if (this.children.length > 1) {
+            this.removeChildren(1);
+        }
+        for (const highlight of this.highlights) {
+            highlight.hide();
+        }
     }
     setCell(position, val) {
         this.grid[position] = val;
@@ -42329,62 +42412,72 @@ class Board {
         // return state + '-' + (this.playerTurn ? 'P' : 'A');
         return this.state.join('') + '-' + (this.playerTurn ? 'P' : 'A');
     }
+    // input
+    mousedownPiece(ev, piece) {
+        if (!this.input)
+            return;
+        this.input.mousedownPiece(ev, piece);
+    }
+    mousedownHighlight(ev, highlight) {
+        if (!this.input)
+            return;
+        this.input.mousedownHighlight(ev, highlight);
+    }
     // W - Ai
     // B - Player
     setBoard(fen) {
-        this.playerKings = 0;
-        this.aiKings = 0;
-        this.playerPieces = [];
-        this.aiPieces = [];
-        this.selectedPiece = null;
-        this.highlights = [];
-        this.jumpPieces = [];
-        this.captured = [];
-        this.grid = [];
-        this.state = [];
-        const [turn, ais, players] = fen.split(':');
+        this.reset();
+        const [turn, whitePieces, blackPieces] = fen.split(':');
         this.playerTurn = turn === 'B';
-        let position = 0, king = false;
-        for (const p of ais.slice(1).split(',')) {
+        let pos = 0, king = false;
+        const first = this.playerFirst ? this.playerPieces : this.aiPieces;
+        const second = this.playerFirst ? this.aiPieces : this.playerPieces;
+        for (const p of blackPieces.slice(1).split(',')) {
             if (p[0] === 'K') {
-                position = +p.slice(1) - 1;
-                king = true;
-                this.aiKings++;
-            }
-            else {
-                position = +p - 1;
-                king = false;
-            }
-            const piece = new _piece__WEBPACK_IMPORTED_MODULE_0__["default"](position, false, king);
-            this.aiPieces.push(piece);
-            this.setCell(position, piece);
-        }
-        for (const p of players.slice(1).split(',')) {
-            if (p[0] === 'K') {
-                position = +p.slice(1) - 1;
+                pos = +p.slice(1) - 1;
                 king = true;
                 this.playerKings++;
             }
             else {
-                position = +p - 1;
+                pos = +p - 1;
                 king = false;
             }
-            const piece = new _piece__WEBPACK_IMPORTED_MODULE_0__["default"](position, true, king);
-            this.playerPieces.push(piece);
-            this.setCell(position, piece);
+            const piece = new _piece__WEBPACK_IMPORTED_MODULE_0__["default"]({
+                pos,
+                player: this.playerFirst,
+                black: true,
+                king,
+                board: this,
+            });
+            first.push(piece);
+            this.setCell(pos, piece);
+            this.addChild(piece);
         }
-    }
-    switch() {
-        this.flipped = !this.flipped;
-        const temp = this.aiPieces;
-        this.aiPieces = this.playerPieces;
-        this.playerPieces = temp;
-        this.aiPieces.map((piece) => {
-            piece.player = !piece.player;
-        });
-        this.playerPieces.map((piece) => {
-            piece.player = !piece.player;
-        });
+        for (const p of whitePieces.slice(1).split(',')) {
+            if (p[0] === 'K') {
+                pos = +p.slice(1) - 1;
+                king = true;
+                this.aiKings++;
+            }
+            else {
+                pos = +p - 1;
+                king = false;
+            }
+            const piece = new _piece__WEBPACK_IMPORTED_MODULE_0__["default"]({
+                pos,
+                player: !this.playerFirst,
+                black: false,
+                king,
+                board: this,
+            });
+            second.push(piece);
+            this.setCell(pos, piece);
+            this.addChild(piece);
+        }
+        // Add the highlights to the board
+        for (const highlight of this.highlights) {
+            this.addChild(highlight);
+        }
     }
     // TODO: Get the fen string
     getBoard() {
@@ -42395,83 +42488,83 @@ class Board {
         return (diff >> 2) + diff % 4;
     }
     getTopLeft(position) {
-        return this.flipped ?
-            position - ((position >> 2) & 1 ? 5 : 4) : // br
-            position + ((position >> 2) & 1 ? 4 : 5); // tl
+        return this.playerFirst ?
+            position + ((position >> 2) & 1 ? 4 : 5) : // tl
+            position - ((position >> 2) & 1 ? 5 : 4); // br
     }
     getTopRight(position) {
-        return this.flipped ?
-            position - ((position >> 2) & 1 ? 4 : 3) : // bl
-            position + ((position >> 2) & 1 ? 3 : 4); // tr
-    }
-    getBottomLeft(position) {
-        return this.flipped ?
+        return this.playerFirst ?
             position + ((position >> 2) & 1 ? 3 : 4) : // tr
             position - ((position >> 2) & 1 ? 4 : 3); // bl
     }
+    getBottomLeft(position) {
+        return this.playerFirst ?
+            position - ((position >> 2) & 1 ? 4 : 3) : // bl
+            position + ((position >> 2) & 1 ? 3 : 4); // tr
+    }
     getBottomRight(position) {
-        return this.flipped ?
-            position + ((position >> 2) & 1 ? 4 : 5) : // tl
-            position - ((position >> 2) & 1 ? 5 : 4); // br
+        return this.playerFirst ?
+            position - ((position >> 2) & 1 ? 5 : 4) : // br
+            position + ((position >> 2) & 1 ? 4 : 5); // tl
     }
     getMiddle(start, end) {
         return (start + end + ((start >> 2) & 1 ? -1 : 1)) >> 1;
     }
     getTopLeftJump(position) {
-        return this.flipped ? position - 9 : position + 9;
+        return this.playerFirst ? position + 9 : position - 9;
     }
     getTopRightJump(position) {
-        return this.flipped ? position - 7 : position + 7;
+        return this.playerFirst ? position + 7 : position - 7;
     }
     getBottomLeftJump(position) {
-        return this.flipped ? position + 7 : position - 7;
+        return this.playerFirst ? position - 7 : position + 7;
     }
     getBottomRightJump(position) {
-        return this.flipped ? position + 9 : position - 9;
+        return this.playerFirst ? position - 9 : position + 9;
     }
     // Move Check
     isValidPosition(position) {
         return position > -1 && position < 32;
     }
     isTopEdge(position) {
-        return this.flipped ?
-            position < 4 : // b
-            position > 27; // t
-    }
-    isTopJumpEdge(position) {
-        return this.flipped ?
-            position < 8 : // b
-            position > 23; // t
-    }
-    isBottomEdge(position) {
-        return this.flipped ?
+        return this.playerFirst ?
             position > 27 : // t
             position < 4; // b
     }
-    isBottomJumpEdge(position) {
-        return this.flipped ?
+    isTopJumpEdge(position) {
+        return this.playerFirst ?
             position > 23 : // t
             position < 8; // b
     }
+    isBottomEdge(position) {
+        return this.playerFirst ?
+            position < 4 : // b
+            position > 27; // t
+    }
+    isBottomJumpEdge(position) {
+        return this.playerFirst ?
+            position < 8 : // b
+            position > 23; // t
+    }
     isLeftEdge(position) {
-        return this.flipped ?
-            position % 8 === 4 : // r
-            position % 8 === 3; // l
-    }
-    isLeftJumpEdge(position) {
-        return this.flipped ?
-            position % 4 === 0 : // r
-            position % 4 === 3; // l
-    }
-    isRightEdge(position) {
-        return this.flipped ?
+        return this.playerFirst ?
             position % 8 === 3 : // l
             position % 8 === 4; // r
     }
-    isRightJumpEdge(position) {
-        return this.flipped ?
+    isLeftJumpEdge(position) {
+        return this.playerFirst ?
             position % 4 === 3 : // l
             position % 4 === 0; // r
+    }
+    isRightEdge(position) {
+        return this.playerFirst ?
+            position % 8 === 4 : // r
+            position % 8 === 3; // l
+    }
+    isRightJumpEdge(position) {
+        return this.playerFirst ?
+            position % 4 === 0 : // r
+            position % 4 === 3; // l
     }
     isEmpty(position) {
         return !this.grid[position];
@@ -42481,16 +42574,16 @@ class Board {
         if (!this.isValidPosition(start))
             return false;
         switch (direction) {
-            case _config_directions__WEBPACK_IMPORTED_MODULE_2__["default"].TOP_LEFT:
+            case _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_LEFT:
                 return !this.isTopEdge(start) && !this.isLeftEdge(start) &&
                     this.isEmpty(this.getTopLeft(start));
-            case _config_directions__WEBPACK_IMPORTED_MODULE_2__["default"].TOP_RIGHT:
+            case _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_RIGHT:
                 return !this.isTopEdge(start) && !this.isRightEdge(start) &&
                     this.isEmpty(this.getTopRight(start));
-            case _config_directions__WEBPACK_IMPORTED_MODULE_2__["default"].BOTTOM_LEFT:
+            case _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_LEFT:
                 return !this.isBottomEdge(start) && !this.isLeftEdge(start) &&
                     this.isEmpty(this.getBottomLeft(start));
-            case _config_directions__WEBPACK_IMPORTED_MODULE_2__["default"].BOTTOM_RIGHT:
+            case _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_RIGHT:
                 return !this.isBottomEdge(start) && !this.isRightEdge(start) &&
                     this.isEmpty(this.getBottomRight(start));
             default:
@@ -42503,22 +42596,22 @@ class Board {
             return false;
         let end = 0;
         switch (direction) {
-            case _config_directions__WEBPACK_IMPORTED_MODULE_2__["default"].TOP_LEFT:
+            case _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_LEFT:
                 if (this.isTopJumpEdge(start) || this.isLeftJumpEdge(start))
                     return false;
                 end = this.getTopLeftJump(start);
                 break;
-            case _config_directions__WEBPACK_IMPORTED_MODULE_2__["default"].TOP_RIGHT:
+            case _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_RIGHT:
                 if (this.isTopJumpEdge(start) || this.isRightJumpEdge(start))
                     return false;
                 end = this.getTopRightJump(start);
                 break;
-            case _config_directions__WEBPACK_IMPORTED_MODULE_2__["default"].BOTTOM_LEFT:
+            case _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_LEFT:
                 if (this.isBottomJumpEdge(start) || this.isLeftJumpEdge(start))
                     return false;
                 end = this.getBottomLeftJump(start);
                 break;
-            case _config_directions__WEBPACK_IMPORTED_MODULE_2__["default"].BOTTOM_RIGHT:
+            case _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_RIGHT:
                 if (this.isBottomJumpEdge(start) || this.isRightJumpEdge(start))
                     return false;
                 end = this.getBottomRightJump(start);
@@ -42691,12 +42784,12 @@ class Board {
     }
     // Patterns
     isDogPattern(direction) {
-        if (direction === _config_directions__WEBPACK_IMPORTED_MODULE_2__["default"].BOTTOM_RIGHT) {
+        if (direction === _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].BOTTOM_RIGHT) {
             const p1 = this.state[0];
             const p2 = this.state[4];
             return p1 === 'P' && p2 === 'A' || p1 === 'A' && p2 === 'P';
         }
-        if (direction === _config_directions__WEBPACK_IMPORTED_MODULE_2__["default"].TOP_LEFT) {
+        if (direction === _config_directions__WEBPACK_IMPORTED_MODULE_3__["default"].TOP_LEFT) {
             const p1 = this.state[31];
             const p2 = this.state[27];
             return p1 === 'P' && p2 === 'A' || p1 === 'A' && p2 === 'P';
@@ -42714,7 +42807,7 @@ class Board {
         if (piece.king)
             return;
         if (promoting) {
-            piece.king = true;
+            piece.toggleKing(true);
             if (piece.player) {
                 this.playerKings++;
             }
@@ -42727,9 +42820,17 @@ class Board {
         const [start, end] = move.moves;
         const piece = this.getCell(start);
         this.promote(piece, !!move.promoting);
-        piece.setPosition(end);
+        piece.setPos(end);
         this.setCell(start, null);
         this.setCell(end, piece);
+    }
+    convertPosToVector(position) {
+        const y = 7 - (position >> 2);
+        const x = (3 - (position % 4) << 1) + ((y + 1) & 1);
+        return {
+            x: x * _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE + _config_values__WEBPACK_IMPORTED_MODULE_5__.HALF_TILE_SIZE,
+            y: y * _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE + _config_values__WEBPACK_IMPORTED_MODULE_5__.HALF_TILE_SIZE,
+        };
     }
     jump(move) {
         const [start, ...positions] = move.moves;
@@ -42737,7 +42838,7 @@ class Board {
         const piece = this.getCell(start);
         const end = positions[positions.length - 1];
         this.promote(piece, !!move.promoting);
-        piece.setPosition(end);
+        piece.setPos(end);
         this.setCell(start, null);
         this.setCell(end, piece);
         // Remove Captured Pieces
@@ -42745,6 +42846,7 @@ class Board {
         for (const pos of positions) {
             current = this.getMiddle(current, pos);
             const captured = this.getCell(current);
+            captured.hide();
             this.captured.push(captured);
             if (captured.player) {
                 this.playerPieces.splice(this.playerPieces.indexOf(captured), 1);
@@ -42762,7 +42864,7 @@ class Board {
     }
     demote(piece, promoting) {
         if (promoting) {
-            piece.king = false;
+            piece.toggleKing(false);
             if (piece.player) {
                 this.playerKings--;
             }
@@ -42775,7 +42877,7 @@ class Board {
         const [start, end] = move.moves;
         const piece = this.getCell(end);
         this.demote(piece, !!move.promoting);
-        piece.setPosition(start);
+        piece.setPos(start);
         this.setCell(end, null);
         this.setCell(start, piece);
     }
@@ -42786,7 +42888,7 @@ class Board {
         // Move Current Piece
         const piece = this.getCell(end);
         this.demote(piece, !!move.promoting);
-        piece.setPosition(start);
+        piece.setPos(start);
         this.setCell(end, null);
         this.setCell(start, piece);
         // Remove Captured Pieces
@@ -42794,6 +42896,7 @@ class Board {
         for (const pos of positions) {
             current = this.getMiddle(current, pos);
             const captured = this.captured.pop();
+            captured.show();
             if (captured.player) {
                 this.playerPieces.push(captured);
                 if (captured.king)
@@ -42852,7 +42955,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var pixi_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! pixi.js */ "./node_modules/pixi.js/dist/esm/pixi.js");
-/* harmony import */ var _highlight__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./highlight */ "./src/classes/highlight.ts");
+/* harmony import */ var _board__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./board */ "./src/classes/board.ts");
 /* harmony import */ var _input__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./input */ "./src/classes/input.ts");
 /* harmony import */ var _ai__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./ai */ "./src/classes/ai.ts");
 /* harmony import */ var _config_colors__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../config/colors */ "./src/config/colors.ts");
@@ -42868,32 +42971,26 @@ __webpack_require__.r(__webpack_exports__);
 
 
 class Checkers {
-    constructor(board) {
+    constructor(fen) {
         this.app = new pixi_js__WEBPACK_IMPORTED_MODULE_0__.Application();
-        this.graphics = new pixi_js__WEBPACK_IMPORTED_MODULE_0__.Graphics();
         this.inputting = true;
         this.jumping = false;
         this.flipped = false;
         this.state = _config_states__WEBPACK_IMPORTED_MODULE_6__["default"].START;
         this.moveStack = [];
         this.tempMoveStack = [];
-        this.board = board;
+        this.board = new _board__WEBPACK_IMPORTED_MODULE_1__["default"](fen);
         this.input = new _input__WEBPACK_IMPORTED_MODULE_2__["default"](this);
         this.ai = new _ai__WEBPACK_IMPORTED_MODULE_3__["default"](this);
+        this.board.input = this.input;
+        this.input.board = this.board;
         this.setup();
     }
     setup() {
-        // Resize the application window
         const size = _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE * 8;
         this.app.renderer.resize(size, size);
         this.app.renderer.backgroundColor = _config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].BEIGE;
-        this.app.stage.addChild(this.graphics);
-        // Setup the input system
-        this.graphics.interactive = true;
-        this.graphics.on('mousedown', (ev) => this.input.mousedown(ev));
-        this.graphics.transform.position.set(_config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE * 4, _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE * 4);
-        this.graphics.transform.pivot.set(_config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE * 4, _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE * 4);
-        this.newGame();
+        this.app.stage.addChild(this.board);
     }
     newGame() {
         this.state = _config_states__WEBPACK_IMPORTED_MODULE_6__["default"].START;
@@ -42903,10 +43000,10 @@ class Checkers {
         this.tempMoveStack = [];
         this.ai.setup();
         // Setup the rotation
-        this.flipped = this.board.flipped;
-        this.graphics.transform.rotation = this.board.flipped ? Math.PI : 0;
-        this.draw();
-        if (this.board.playerTurn) {
+        this.flipped = this.board.playerFirst;
+        this.flip();
+        this.board.playerTurn = this.board.playerFirst;
+        if (this.board.playerFirst) {
             this.passToPlayer();
         }
         else {
@@ -42915,7 +43012,14 @@ class Checkers {
     }
     flip() {
         this.flipped = !this.flipped;
-        this.graphics.transform.rotation = this.flipped ? Math.PI : 0;
+        const val = this.flipped ? Math.PI : 0;
+        this.board.transform.rotation = val;
+        for (const piece of this.board.aiPieces)
+            piece.transform.rotation = val;
+        for (const piece of this.board.playerPieces)
+            piece.transform.rotation = val;
+        for (const piece of this.board.captured)
+            piece.transform.rotation = val;
     }
     undo() {
         if (this.moveStack.length < 2)
@@ -42940,7 +43044,6 @@ class Checkers {
         // Reconstruct Tree Opening
         this.ai.resetOpening();
         this.board.selectedPiece = null;
-        this.draw();
         this.passToPlayer();
     }
     redo() {
@@ -42962,64 +43065,66 @@ class Checkers {
             this.board.move(move2);
         }
         this.pushToMoveStack(move2);
-        this.draw();
         this.passToPlayer();
     }
     // Highlights
     resetHighlights() {
-        for (const { position, } of this.board.highlights) {
-            this.board.setCell(position, null);
-        }
-        this.board.highlights.splice(0);
+        for (const highlight of this.board.highlights)
+            highlight.hide();
     }
-    addHighlight(position) {
-        const highlight = new _highlight__WEBPACK_IMPORTED_MODULE_1__["default"](position);
-        this.board.highlights.push(highlight);
-        this.board.setCell(position, highlight);
+    addHighlight(index, position) {
+        const highlight = this.board.highlights[index];
+        highlight.setPos(position);
+        highlight.show();
     }
     highlightPlayerMoves(piece) {
+        var _a;
         if (!piece.player)
             return;
+        (_a = this.board.selectedPiece) === null || _a === void 0 ? void 0 : _a.toggleSelected(false);
         this.board.selectedPiece = piece;
+        piece.toggleSelected(true);
         this.resetHighlights();
+        let index = 0;
         // Mandatory Jumps
         if (this.board.jumpPieces.length > 0) {
             if (piece.king) {
-                if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_LEFT, false))
-                    this.addHighlight(this.board.getBottomLeftJump(piece.position));
-                if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_RIGHT, false))
-                    this.addHighlight(this.board.getBottomRightJump(piece.position));
+                if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_LEFT, false))
+                    this.addHighlight(index++, this.board.getBottomLeftJump(piece.pos));
+                if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_RIGHT, false))
+                    this.addHighlight(index++, this.board.getBottomRightJump(piece.pos));
             }
-            if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_LEFT, false))
-                this.addHighlight(this.board.getTopLeftJump(piece.position));
-            if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_RIGHT, false))
-                this.addHighlight(this.board.getTopRightJump(piece.position));
+            if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_LEFT, false))
+                this.addHighlight(index++, this.board.getTopLeftJump(piece.pos));
+            if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_RIGHT, false))
+                this.addHighlight(index++, this.board.getTopRightJump(piece.pos));
         }
         else { // Normal Move
             if (piece.king) {
-                if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_LEFT))
-                    this.addHighlight(this.board.getBottomLeft(piece.position));
-                if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_RIGHT))
-                    this.addHighlight(this.board.getBottomRight(piece.position));
+                if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_LEFT))
+                    this.addHighlight(index++, this.board.getBottomLeft(piece.pos));
+                if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_RIGHT))
+                    this.addHighlight(index++, this.board.getBottomRight(piece.pos));
             }
-            if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_LEFT))
-                this.addHighlight(this.board.getTopLeft(piece.position));
-            if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_RIGHT))
-                this.addHighlight(this.board.getTopRight(piece.position));
+            if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_LEFT))
+                this.addHighlight(index++, this.board.getTopLeft(piece.pos));
+            if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_RIGHT))
+                this.addHighlight(index++, this.board.getTopRight(piece.pos));
         }
-        this.draw();
     }
     highlightAdditionalJumps(piece) {
-        if (piece.king && !this.board.isBottomEdge(piece.position)) {
-            if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_LEFT, false))
-                this.addHighlight(this.board.getBottomLeftJump(piece.position));
-            if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_RIGHT, false))
-                this.addHighlight(this.board.getBottomRightJump(piece.position));
+        let index = 0;
+        if (piece.king && !this.board.isBottomEdge(piece.pos)) {
+            if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_LEFT, false))
+                this.addHighlight(index++, this.board.getBottomLeftJump(piece.pos));
+            if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_RIGHT, false))
+                this.addHighlight(index++, this.board.getBottomRightJump(piece.pos));
         }
-        if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_LEFT, false))
-            this.addHighlight(this.board.getTopLeftJump(piece.position));
-        if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_RIGHT, false))
-            this.addHighlight(this.board.getTopRightJump(piece.position));
+        if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_LEFT, false))
+            this.addHighlight(index++, this.board.getTopLeftJump(piece.pos));
+        if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_RIGHT, false))
+            this.addHighlight(index++, this.board.getTopRightJump(piece.pos));
+        return index;
     }
     addNotationToMove(move) {
         move.notation = move.moves.map((val) => val + 1).join(move.jumping ? 'x' : '-');
@@ -43051,13 +43156,17 @@ class Checkers {
         this.inputting = false; // block inputs
         this.resetHighlights();
         const piece = this.board.selectedPiece;
+        piece.toggleSelected(false);
         const move = {
-            moves: [piece.position, position],
+            moves: [piece.pos, position],
             jumping: this.jumping || this.board.jumpPieces.length > 0,
             promoting: !piece.king && this.board.isTopEdge(position),
         };
         if (move.jumping) {
             this.board.jump(move);
+            for (const piece of this.board.jumpPieces) {
+                piece.toggleJumping(false);
+            }
             this.board.jumpPieces.splice(0);
             if (this.captureMove) {
                 this.captureMove.moves.push(position);
@@ -43068,11 +43177,9 @@ class Checkers {
             }
             if (!move.promoting) {
                 // Check if the current piece can still capture
-                this.highlightAdditionalJumps(piece);
-                if (this.board.highlights.length > 0) {
+                if (this.highlightAdditionalJumps(piece) > 0) {
                     this.jumping = true;
                     this.inputting = true;
-                    this.draw();
                     return;
                 }
             }
@@ -43087,26 +43194,27 @@ class Checkers {
         this.tempMoveStack = [];
         this.board.playerTurn = false;
         this.board.selectedPiece = null;
-        this.draw();
-        this.passToAi();
+        setTimeout(() => {
+            this.passToAi();
+        }, 100);
     }
     // Turns
     setupTurn() {
         this.board.jumpPieces.splice(0);
         this.board.jumpPieces = this.getForceJumps(this.board.playerTurn);
         // Change State
-        if (this.state !== _config_states__WEBPACK_IMPORTED_MODULE_6__["default"].END &&
-            (this.board.aiPieces.length < 4 || this.board.playerPieces.length < 4)) {
+        if (this.state !== _config_states__WEBPACK_IMPORTED_MODULE_6__["default"].END && (this.moveStack.length > 40 ||
+            this.board.aiPieces.length < 4 ||
+            this.board.playerPieces.length < 4)) {
             this.state = _config_states__WEBPACK_IMPORTED_MODULE_6__["default"].END;
         }
     }
     passToAi() {
         this.setupTurn();
         if (this.gameOver(false)) {
-            this.draw();
             return;
         }
-        console.log('Ai Turn');
+        // console.log('Ai Turn');
         this.ai.move();
         this.board.playerTurn = true;
         this.passToPlayer();
@@ -43114,38 +43222,39 @@ class Checkers {
     passToPlayer() {
         this.setupTurn();
         if (this.gameOver(true)) {
-            this.draw();
             return;
         }
-        console.log('Player Turn');
+        for (const piece of this.board.jumpPieces) {
+            piece.toggleJumping(true);
+        }
+        // console.log('Player Turn');
         this.inputting = true;
-        this.draw();
     }
     hasMoves(player) {
         if (player) {
             for (const piece of this.board.playerPieces) {
-                if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_LEFT))
+                if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_LEFT))
                     return true;
-                if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_RIGHT))
+                if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_RIGHT))
                     return true;
                 if (piece.king) {
-                    if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_LEFT))
+                    if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_LEFT))
                         return true;
-                    if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_RIGHT))
+                    if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_RIGHT))
                         return true;
                 }
             }
         }
         else {
             for (const piece of this.board.aiPieces) {
-                if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_LEFT))
+                if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_LEFT))
                     return true;
-                if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_RIGHT))
+                if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_RIGHT))
                     return true;
                 if (piece.king) {
-                    if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_LEFT))
+                    if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_LEFT))
                         return true;
-                    if (this.board.isMovable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_RIGHT))
+                    if (this.board.isMovable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_RIGHT))
                         return true;
                 }
             }
@@ -43163,17 +43272,18 @@ class Checkers {
         }
         return false;
     }
+    // TODO: Create proper gameover states
     gameOver(player) {
         if (this.board.playerPieces.length === 0) {
-            alert('You Lose');
+            // alert('You Lose');
             return true;
         }
         if (this.board.aiPieces.length === 0) {
-            alert('You Win');
+            // alert('You Win');
             return true;
         }
         if (!this.hasAvailableMoves(player)) {
-            alert('Draw');
+            // alert('Draw');
             return true;
         }
         return false;
@@ -43182,20 +43292,20 @@ class Checkers {
         const jumpPieces = [];
         if (player) {
             for (const piece of this.board.playerPieces) {
-                if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_LEFT, false)) {
+                if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_LEFT, false)) {
                     jumpPieces.push(piece);
                     continue;
                 }
-                if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_RIGHT, false)) {
+                if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_RIGHT, false)) {
                     jumpPieces.push(piece);
                     continue;
                 }
                 if (piece.king) {
-                    if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_LEFT, false)) {
+                    if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_LEFT, false)) {
                         jumpPieces.push(piece);
                         continue;
                     }
-                    if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_RIGHT, false)) {
+                    if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_RIGHT, false)) {
                         jumpPieces.push(piece);
                         continue;
                     }
@@ -43204,20 +43314,20 @@ class Checkers {
         }
         else {
             for (const piece of this.board.aiPieces) {
-                if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_LEFT, true)) {
+                if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_LEFT, true)) {
                     jumpPieces.push(piece);
                     continue;
                 }
-                if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_RIGHT, true)) {
+                if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].BOTTOM_RIGHT, true)) {
                     jumpPieces.push(piece);
                     continue;
                 }
                 if (piece.king) {
-                    if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_LEFT, true)) {
+                    if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_LEFT, true)) {
                         jumpPieces.push(piece);
                         continue;
                     }
-                    if (this.board.isJumpable(piece.position, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_RIGHT, true)) {
+                    if (this.board.isJumpable(piece.pos, _config_directions__WEBPACK_IMPORTED_MODULE_7__["default"].TOP_RIGHT, true)) {
                         jumpPieces.push(piece);
                         continue;
                     }
@@ -43225,80 +43335,6 @@ class Checkers {
             }
         }
         return jumpPieces;
-    }
-    // Draw Functions
-    draw() {
-        this.drawTiles();
-        this.drawPieces();
-        this.drawHighlights();
-        this.drawSelectedPiece();
-        this.drawJumpPieces();
-    }
-    drawTiles() {
-        this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].BROWN);
-        for (let y = 0; y < 8; y++) {
-            for (let x = y & 1 ^ 1; x < 8; x += 2) {
-                this.graphics.drawRect(x * _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE, y * _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE, _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE, _config_values__WEBPACK_IMPORTED_MODULE_5__.TILE_SIZE);
-            }
-        }
-        this.graphics.endFill();
-    }
-    drawPieces() {
-        const first = this.board.firstPlayerTurn ? _config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].BLACK : _config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].WHITE;
-        const second = this.board.firstPlayerTurn ? _config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].WHITE : _config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].BLACK;
-        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_5__.OUTLINE_SIZE, second);
-        this.graphics.beginFill(first);
-        for (const piece of this.board.playerPieces) {
-            this.graphics.drawShape(piece);
-            if (piece.king) {
-                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].RED);
-                // TODO: Add king texture
-                this.graphics.drawRect(piece.x - piece.radius / 2, piece.y - piece.radius / 2, piece.radius, piece.radius);
-                this.graphics.beginFill(first);
-            }
-        }
-        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_5__.OUTLINE_SIZE, first);
-        this.graphics.beginFill(second);
-        for (const piece of this.board.aiPieces) {
-            this.graphics.drawShape(piece);
-            if (piece.king) {
-                this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].RED);
-                // TODO: Add king texture
-                this.graphics.drawRect(piece.x - piece.radius / 2, piece.y - piece.radius / 2, piece.radius, piece.radius);
-                this.graphics.beginFill(second);
-            }
-        }
-        this.graphics.lineStyle(0);
-        this.graphics.endFill();
-    }
-    drawHighlights() {
-        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_5__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].WHITE);
-        this.graphics.beginFill(undefined, 0);
-        for (const highlight of this.board.highlights) {
-            this.graphics.drawShape(highlight);
-        }
-        this.graphics.lineStyle(0);
-        this.graphics.endFill();
-    }
-    drawSelectedPiece() {
-        if (!this.board.selectedPiece)
-            return;
-        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_5__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].YELLOW);
-        this.graphics.beginFill(undefined, 0);
-        this.graphics.drawShape(this.board.selectedPiece);
-        this.graphics.lineStyle(0);
-        this.graphics.endFill();
-    }
-    drawJumpPieces() {
-        if (this.board.jumpPieces.length < 1)
-            return;
-        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_5__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_4__["default"].RED);
-        this.graphics.beginFill(undefined, 0);
-        for (const pieces of this.board.jumpPieces) {
-            this.graphics.drawShape(pieces);
-        }
-        this.graphics.lineStyle(0);
-        this.graphics.endFill();
     }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Checkers);
@@ -43373,54 +43409,52 @@ class Heuristic {
         //** Value Factors */
         // Piece Count
         score += (aiCount - playerCount) * this.pieceFactor;
+        // King Count
+        score += (this.board.aiKings - this.board.playerKings) * this.kingFactor;
         switch (this.checkers.state) {
             case _config_states__WEBPACK_IMPORTED_MODULE_1__["default"].MID:
-                // King Count
-                score += (this.board.aiKings - this.board.playerKings) * this.kingFactor;
                 for (const piece of this.board.playerPieces) {
-                    score -= piece.position >> 2; // Close to promotion squares
-                    score -= this.midGamePositionFactors[piece.position];
+                    score -= piece.pos >> 2; // Close to promotion squares
+                    score -= this.midGamePositionFactors[piece.pos];
                     if (piece.king) { // Check for trapped king
-                        if (this.board.isKingTrapped(piece.position, piece.player))
+                        if (this.board.isKingTrapped(piece.pos, piece.player))
                             score += this.trapKingFactor;
                     }
                     else { // Check for runaway piece
-                        if (this.board.isRunaway(piece.position, piece.player))
+                        if (this.board.isRunaway(piece.pos, piece.player))
                             score -= this.runawayFactor;
                     }
                 }
                 for (const piece of this.board.aiPieces) {
-                    score += 7 - (piece.position >> 2); // Close to promotion squares
-                    score += this.midGamePositionFactors[piece.position];
+                    score += 7 - (piece.pos >> 2); // Close to promotion squares
+                    score += this.midGamePositionFactors[piece.pos];
                     if (piece.king) { // Check for trapped king
-                        if (this.board.isKingTrapped(piece.position, piece.player))
+                        if (this.board.isKingTrapped(piece.pos, piece.player))
                             score -= this.trapKingFactor;
                     }
                     else { // Check for runaway piece
-                        if (this.board.isRunaway(piece.position, piece.player))
+                        if (this.board.isRunaway(piece.pos, piece.player))
                             score += this.runawayFactor;
                     }
                 }
                 break;
             case _config_states__WEBPACK_IMPORTED_MODULE_1__["default"].END:
-                // King Count
-                score += (this.board.aiKings - this.board.playerKings) * this.kingFactor * 2;
                 //** Positional */
                 // for (const piece of this.board.playerPieces) {
-                //   score += this.endGamePositionFactors[piece.position];
+                //   score += this.endGamePositionFactors[piece.pos];
                 // }
                 // for (const piece of this.board.aiPieces) {
-                //   score -= this.endGamePositionFactors[piece.position];
+                //   score -= this.endGamePositionFactors[piece.pos];
                 // }
                 // Ai is winning
                 if (playerCount < aiCount) {
                     for (const piece of this.board.playerPieces) {
-                        score -= this.board.countSafeMoves(piece.position, piece.player) * 10;
-                        const top = this.board.isTopJumpEdge(piece.position);
-                        const bottom = this.board.isBottomJumpEdge(piece.position);
-                        const left = this.board.isLeftJumpEdge(piece.position);
-                        const right = this.board.isRightJumpEdge(piece.position);
-                        const doubleD = this.doubleDiagonal[piece.position];
+                        score -= this.board.countSafeMoves(piece.pos, piece.player) * 10;
+                        const top = this.board.isTopJumpEdge(piece.pos);
+                        const bottom = this.board.isBottomJumpEdge(piece.pos);
+                        const left = this.board.isLeftJumpEdge(piece.pos);
+                        const right = this.board.isRightJumpEdge(piece.pos);
+                        const doubleD = this.doubleDiagonal[piece.pos];
                         // At double corner
                         if (bottom && right || top && left) {
                             score += 1;
@@ -43437,11 +43471,6 @@ class Heuristic {
                     }
                     // incentivize trading pieces
                     score += (12 - playerCount - aiCount) * 10;
-                    // for (const pp of this.board.playerPieces) {
-                    //   for (const ap of this.board.aiPieces) {
-                    //     score += 10 - this.board.getDistance(pp.position, ap.position);
-                    //   }
-                    // }
                     // Dog pattern check
                     if (this.board.isDogPattern(_config_directions__WEBPACK_IMPORTED_MODULE_0__["default"].BOTTOM_RIGHT) ||
                         this.board.isDogPattern(_config_directions__WEBPACK_IMPORTED_MODULE_0__["default"].TOP_LEFT)) {
@@ -43453,10 +43482,10 @@ class Heuristic {
                 }
                 else { // piece disadvantage
                     for (const piece of this.board.aiPieces) {
-                        const top = this.board.isTopJumpEdge(piece.position);
-                        const bottom = this.board.isBottomJumpEdge(piece.position);
-                        const left = this.board.isLeftJumpEdge(piece.position);
-                        const right = this.board.isRightJumpEdge(piece.position);
+                        const top = this.board.isTopJumpEdge(piece.pos);
+                        const bottom = this.board.isBottomJumpEdge(piece.pos);
+                        const left = this.board.isLeftJumpEdge(piece.pos);
+                        const right = this.board.isRightJumpEdge(piece.pos);
                         // At double corner
                         if (bottom && right || top && left) {
                             score += 20;
@@ -43468,25 +43497,35 @@ class Heuristic {
                             score -= 5;
                         }
                     }
+                    // Dont trade
+                    score += (playerCount + aiCount) * 10;
+                    // Dog pattern check
+                    if (this.board.isDogPattern(_config_directions__WEBPACK_IMPORTED_MODULE_0__["default"].BOTTOM_RIGHT) ||
+                        this.board.isDogPattern(_config_directions__WEBPACK_IMPORTED_MODULE_0__["default"].TOP_LEFT)) {
+                        score -= 6;
+                    }
                 }
-                // Trapped Pieces
                 for (const piece of this.board.playerPieces) {
+                    score -= piece.pos >> 2; // Close to promotion squares
+                    // Trapped Pieces
                     if (piece.king) {
-                        if (this.board.isKingTrapped(piece.position, piece.player))
+                        if (this.board.isKingTrapped(piece.pos, piece.player))
                             score += this.trapFactor;
                     }
                     else {
-                        if (this.board.isPieceTrapped(piece.position, piece.player))
+                        if (this.board.isPieceTrapped(piece.pos, piece.player))
                             score += this.trapFactor;
                     }
                 }
                 for (const piece of this.board.aiPieces) {
+                    score += piece.pos >> 2; // Close to promotion squares
+                    // Trapped Pieces
                     if (piece.king) {
-                        if (this.board.isKingTrapped(piece.position, piece.player))
+                        if (this.board.isKingTrapped(piece.pos, piece.player))
                             score -= this.trapFactor;
                     }
                     else {
-                        if (this.board.isPieceTrapped(piece.position, piece.player))
+                        if (this.board.isPieceTrapped(piece.pos, piece.player))
                             score -= this.trapFactor;
                     }
                 }
@@ -43513,28 +43552,50 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var pixi_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! pixi.js */ "./node_modules/pixi.js/dist/esm/pixi.js");
 /* harmony import */ var _config_values__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../config/values */ "./src/config/values.ts");
+/* harmony import */ var _config_colors__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../config/colors */ "./src/config/colors.ts");
 
 
-class Highlight extends pixi_js__WEBPACK_IMPORTED_MODULE_0__.Circle {
-    constructor(position) {
+
+class Highlight extends pixi_js__WEBPACK_IMPORTED_MODULE_0__.Container {
+    constructor(config) {
         super();
-        this.position = 0;
-        this.radius = _config_values__WEBPACK_IMPORTED_MODULE_1__.HALF_TILE_SIZE - _config_values__WEBPACK_IMPORTED_MODULE_1__.OUTLINE_SIZE;
-        this.setPosition(position);
+        this.pos = 0;
+        this.graphics = new pixi_js__WEBPACK_IMPORTED_MODULE_0__.Graphics();
+        this.board = config.board;
+        this.graphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_1__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_2__["default"].WHITE);
+        this.graphics.beginFill(_config_colors__WEBPACK_IMPORTED_MODULE_2__["default"].WHITE, 0.25);
+        this.graphics.drawCircle(0, 0, _config_values__WEBPACK_IMPORTED_MODULE_1__.HALF_TILE_SIZE - _config_values__WEBPACK_IMPORTED_MODULE_1__.OUTLINE_SIZE);
+        this.graphics.endFill();
+        this.addChild(this.graphics);
+        this.setPos(config.pos);
+        this.hide();
+        // Input System
+        this.once('mousedown', (ev) => this.mousedown(ev));
     }
     getVector() {
-        const y = 7 - (this.position >> 2);
-        const x = (3 - (this.position % 4) << 1) + ((y + 1) & 1);
+        const y = 7 - (this.pos >> 2);
+        const x = (3 - (this.pos % 4) << 1) + ((y + 1) & 1);
         return {
             x,
             y,
         };
     }
-    setPosition(position) {
-        this.position = position;
+    setPos(pos) {
+        this.pos = pos;
         const { x, y, } = this.getVector();
         this.x = x * _config_values__WEBPACK_IMPORTED_MODULE_1__.TILE_SIZE + _config_values__WEBPACK_IMPORTED_MODULE_1__.HALF_TILE_SIZE;
         this.y = y * _config_values__WEBPACK_IMPORTED_MODULE_1__.TILE_SIZE + _config_values__WEBPACK_IMPORTED_MODULE_1__.HALF_TILE_SIZE;
+    }
+    mousedown(ev) {
+        this.board.mousedownHighlight(ev, this);
+    }
+    show() {
+        this.interactive = true;
+        this.visible = true;
+    }
+    hide() {
+        this.interactive = false;
+        this.visible = false;
     }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Highlight);
@@ -43553,42 +43614,28 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _piece__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./piece */ "./src/classes/piece.ts");
-/* harmony import */ var _highlight__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./highlight */ "./src/classes/highlight.ts");
-/* harmony import */ var _config_values__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../config/values */ "./src/config/values.ts");
-
-
-
 class Input {
     constructor(checkers) {
+        this.clicking = false;
         this.checkers = checkers;
-        this.board = checkers.board;
     }
-    // TODO: Implement flip
     convertVectorToPosition({ x, y, }, flipped) {
         return flipped ? (y << 2) + (x >> 1) : ((7 - y) << 2) + 3 - (x >> 1);
     }
-    mousedown(ev) {
-        if (!this.checkers.inputting || !this.board.playerTurn)
+    mousedownPiece(ev, piece) {
+        if (!this.board || !this.checkers.inputting || !this.board.playerTurn)
             return;
-        const position = this.convertVectorToPosition({
-            x: Math.floor(ev.data.global.x / _config_values__WEBPACK_IMPORTED_MODULE_2__.TILE_SIZE),
-            y: Math.floor(ev.data.global.y / _config_values__WEBPACK_IMPORTED_MODULE_2__.TILE_SIZE),
-        }, this.checkers.flipped);
-        const cell = this.board.getCell(position);
-        if (!cell)
-            return;
-        // Check if highlight/possible player move
-        if (cell instanceof _highlight__WEBPACK_IMPORTED_MODULE_1__["default"] && this.board.selectedPiece) {
-            this.checkers.handlePlayerMove(position);
-            return;
-        }
         if (this.checkers.jumping)
             return;
-        // Check if piece
-        if (cell instanceof _piece__WEBPACK_IMPORTED_MODULE_0__["default"]) {
-            this.checkers.highlightPlayerMoves(cell);
-        }
+        this.checkers.highlightPlayerMoves(piece);
+    }
+    mousedownHighlight(ev, highlight) {
+        if (!this.board || !this.checkers.inputting || !this.board.playerTurn)
+            return;
+        // Check if there is a selected piece
+        if (!this.board.selectedPiece)
+            return;
+        this.checkers.handlePlayerMove(highlight.pos);
     }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Input);
@@ -43609,30 +43656,95 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var pixi_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! pixi.js */ "./node_modules/pixi.js/dist/esm/pixi.js");
 /* harmony import */ var _config_values__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../config/values */ "./src/config/values.ts");
+/* harmony import */ var _config_colors__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../config/colors */ "./src/config/colors.ts");
 
 
-class Piece extends pixi_js__WEBPACK_IMPORTED_MODULE_0__.Circle {
-    constructor(position, player, king) {
+
+const blackKing = pixi_js__WEBPACK_IMPORTED_MODULE_0__.Texture.from('/img/black-king.png');
+const whiteKing = pixi_js__WEBPACK_IMPORTED_MODULE_0__.Texture.from('/img/white-king.png');
+class Piece extends pixi_js__WEBPACK_IMPORTED_MODULE_0__.Container {
+    constructor(config) {
         super();
-        this.position = 0;
-        this.radius = _config_values__WEBPACK_IMPORTED_MODULE_1__.PIECE_RADIUS;
-        this.setPosition(position);
-        this.player = player;
-        this.king = !!king;
+        this.pos = 0;
+        this.board = config.board;
+        this.setPos(config.pos);
+        // Values for player
+        this.player = config.player;
+        this.king = !!config.king;
+        this.colors = {
+            primary: config.black ? _config_colors__WEBPACK_IMPORTED_MODULE_2__["default"].BLACK : _config_colors__WEBPACK_IMPORTED_MODULE_2__["default"].WHITE,
+            outline: config.black ? _config_colors__WEBPACK_IMPORTED_MODULE_2__["default"].WHITE : _config_colors__WEBPACK_IMPORTED_MODULE_2__["default"].BLACK,
+        };
+        // Create Piece Graphics
+        this.pieceGraphics = new pixi_js__WEBPACK_IMPORTED_MODULE_0__.Graphics();
+        this.pieceGraphics.beginFill(this.colors.primary);
+        this.pieceGraphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_1__.OUTLINE_SIZE, this.colors.outline);
+        this.pieceGraphics.drawCircle(0, 0, _config_values__WEBPACK_IMPORTED_MODULE_1__.PIECE_RADIUS);
+        this.pieceGraphics.endFill();
+        this.addChild(this.pieceGraphics);
+        this.pieceGraphics.interactive = false;
+        // King Image
+        this.kingSprite = new pixi_js__WEBPACK_IMPORTED_MODULE_0__.Sprite(config.black ? blackKing : whiteKing);
+        this.addChild(this.kingSprite);
+        this.kingSprite.visible = false;
+        this.kingSprite.x = -16;
+        this.kingSprite.y = -16;
+        this.kingSprite.interactive = false;
+        // Outline graphics
+        // Jumping Piece
+        this.jumpingGraphics = new pixi_js__WEBPACK_IMPORTED_MODULE_0__.Graphics();
+        this.jumpingGraphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_1__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_2__["default"].RED);
+        this.jumpingGraphics.beginFill(undefined, 0);
+        this.jumpingGraphics.drawCircle(0, 0, _config_values__WEBPACK_IMPORTED_MODULE_1__.PIECE_RADIUS);
+        this.addChild(this.jumpingGraphics);
+        this.jumpingGraphics.visible = false;
+        this.jumpingGraphics.interactive = false;
+        // Selected Piece
+        this.selectedGraphics = new pixi_js__WEBPACK_IMPORTED_MODULE_0__.Graphics();
+        this.selectedGraphics.lineStyle(_config_values__WEBPACK_IMPORTED_MODULE_1__.OUTLINE_SIZE, _config_colors__WEBPACK_IMPORTED_MODULE_2__["default"].YELLOW);
+        this.selectedGraphics.beginFill(undefined, 0);
+        this.selectedGraphics.drawCircle(0, 0, _config_values__WEBPACK_IMPORTED_MODULE_1__.PIECE_RADIUS);
+        this.addChild(this.selectedGraphics);
+        this.selectedGraphics.visible = false;
+        this.selectedGraphics.interactive = false;
+        // Input System
+        this.interactive = true;
+        this.once('mousedown', (ev) => this.mousedown(ev));
     }
     getVector() {
-        const y = 7 - (this.position >> 2);
-        const x = (3 - (this.position % 4) << 1) + ((y + 1) & 1);
+        const y = 7 - (this.pos >> 2);
+        const x = (3 - (this.pos % 4) << 1) + ((y + 1) & 1);
         return {
             x,
             y,
         };
     }
-    setPosition(position) {
-        this.position = position;
+    setPos(pos) {
+        this.pos = pos;
         const { x, y, } = this.getVector();
         this.x = x * _config_values__WEBPACK_IMPORTED_MODULE_1__.TILE_SIZE + _config_values__WEBPACK_IMPORTED_MODULE_1__.HALF_TILE_SIZE;
         this.y = y * _config_values__WEBPACK_IMPORTED_MODULE_1__.TILE_SIZE + _config_values__WEBPACK_IMPORTED_MODULE_1__.HALF_TILE_SIZE;
+    }
+    toggleKing(val) {
+        this.king = val;
+        this.kingSprite.visible = val;
+    }
+    toggleJumping(visible) {
+        this.jumpingGraphics.visible = visible;
+    }
+    toggleSelected(visible) {
+        this.selectedGraphics.visible = visible;
+    }
+    hide() {
+        this.interactive = false;
+        this.visible = false;
+    }
+    show() {
+        this.interactive = true;
+        this.visible = true;
+    }
+    mousedown(ev) {
+        this.board.mousedownPiece(ev, this);
     }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Piece);
@@ -44578,7 +44690,7 @@ __webpack_require__.r(__webpack_exports__);
 const TILE_SIZE = 64;
 const HALF_TILE_SIZE = TILE_SIZE / 2;
 const PIECE_RADIUS = HALF_TILE_SIZE - 4;
-const OUTLINE_SIZE = 4;
+const OUTLINE_SIZE = 2.5;
 const MAX_DEPTH_MID = 8;
 const MAX_DEPTH_END = 9;
 const MAX_DEPTH_END_4 = 22;
@@ -45988,17 +46100,17 @@ var __webpack_exports__ = {};
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _main_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./main.css */ "./src/main.css");
 /* harmony import */ var _classes_checkers__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./classes/checkers */ "./src/classes/checkers.ts");
-/* harmony import */ var _classes_board__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./classes/board */ "./src/classes/board.ts");
+/* harmony import */ var _img_black_king_png__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./img/black-king.png */ "./src/img/black-king.png");
+/* harmony import */ var _img_white_king_png__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./img/white-king.png */ "./src/img/white-king.png");
 var _a;
 
 
 
-const board = new _classes_board__WEBPACK_IMPORTED_MODULE_2__["default"]('B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12');
-// const board = new Board('B:BK9,K10:WK18');
-// const board = new Board('B:BK23,K24:WK15');
-// const board = new Board('B:WK10,K15,K19:BK5,K27');
-const checkers = new _classes_checkers__WEBPACK_IMPORTED_MODULE_1__["default"](board);
+
+const checkers = new _classes_checkers__WEBPACK_IMPORTED_MODULE_1__["default"]();
+const board = checkers.board;
 (_a = document.getElementById('checkers')) === null || _a === void 0 ? void 0 : _a.appendChild(checkers.app.view);
+checkers.newGame();
 const w = window;
 w.checkers = checkers;
 w.board = board;
@@ -46017,19 +46129,14 @@ function clearMoveList() {
         table.deleteRow(i);
 }
 w.playBlack = () => {
+    board.playerFirst = true;
     board.setBoard('B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12');
-    board.firstPlayerTurn = true;
-    board.playerTurn = true;
-    board.flipped = false;
     clearMoveList();
     checkers.newGame();
 };
 w.playWhite = () => {
+    board.playerFirst = false;
     board.setBoard('B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12');
-    board.firstPlayerTurn = false;
-    board.playerTurn = false;
-    board.flipped = false;
-    board.switch();
     clearMoveList();
     checkers.newGame();
 };

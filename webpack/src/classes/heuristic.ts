@@ -64,60 +64,56 @@ class Heuristic {
     //** Value Factors */
     // Piece Count
     score += (aiCount - playerCount) * this.pieceFactor;
+    // King Count
+    score += (this.board.aiKings - this.board.playerKings) * this.kingFactor;
 
     switch (this.checkers.state) {
     case STATES.MID:
-      // King Count
-      score += (this.board.aiKings - this.board.playerKings) * this.kingFactor;
-
       for (const piece of this.board.playerPieces) {
-        score -= piece.position >> 2; // Close to promotion squares
-        score -= this.midGamePositionFactors[piece.position];
+        score -= piece.pos >> 2; // Close to promotion squares
+        score -= this.midGamePositionFactors[piece.pos];
 
         if (piece.king) { // Check for trapped king
-          if (this.board.isKingTrapped(piece.position, piece.player))
+          if (this.board.isKingTrapped(piece.pos, piece.player))
             score += this.trapKingFactor;
         } else { // Check for runaway piece
-          if (this.board.isRunaway(piece.position, piece.player))
+          if (this.board.isRunaway(piece.pos, piece.player))
             score -= this.runawayFactor;
         }
       }
 
       for (const piece of this.board.aiPieces) {
-        score += 7 - (piece.position >> 2); // Close to promotion squares
-        score += this.midGamePositionFactors[piece.position];
+        score += 7 - (piece.pos >> 2); // Close to promotion squares
+        score += this.midGamePositionFactors[piece.pos];
 
         if (piece.king) { // Check for trapped king
-          if (this.board.isKingTrapped(piece.position, piece.player))
+          if (this.board.isKingTrapped(piece.pos, piece.player))
             score -= this.trapKingFactor;
         } else { // Check for runaway piece
-          if (this.board.isRunaway(piece.position, piece.player))
+          if (this.board.isRunaway(piece.pos, piece.player))
             score += this.runawayFactor;
         }
       }
       break;
     case STATES.END:
-      // King Count
-      score += (this.board.aiKings - this.board.playerKings) * this.kingFactor * 2;
-
       //** Positional */
       // for (const piece of this.board.playerPieces) {
-      //   score += this.endGamePositionFactors[piece.position];
+      //   score += this.endGamePositionFactors[piece.pos];
       // }
       // for (const piece of this.board.aiPieces) {
-      //   score -= this.endGamePositionFactors[piece.position];
+      //   score -= this.endGamePositionFactors[piece.pos];
       // }
 
       // Ai is winning
       if (playerCount < aiCount) {
         for (const piece of this.board.playerPieces) {
-          score -= this.board.countSafeMoves(piece.position, piece.player) * 10;
+          score -= this.board.countSafeMoves(piece.pos, piece.player) * 10;
 
-          const top = this.board.isTopJumpEdge(piece.position);
-          const bottom = this.board.isBottomJumpEdge(piece.position);
-          const left = this.board.isLeftJumpEdge(piece.position);
-          const right = this.board.isRightJumpEdge(piece.position);
-          const doubleD = this.doubleDiagonal[piece.position];
+          const top = this.board.isTopJumpEdge(piece.pos);
+          const bottom = this.board.isBottomJumpEdge(piece.pos);
+          const left = this.board.isLeftJumpEdge(piece.pos);
+          const right = this.board.isRightJumpEdge(piece.pos);
+          const doubleD = this.doubleDiagonal[piece.pos];
           // At double corner
           if (bottom && right || top && left) {
             score += 1;
@@ -133,12 +129,6 @@ class Heuristic {
         // incentivize trading pieces
         score += (12 - playerCount - aiCount) * 10;
 
-        // for (const pp of this.board.playerPieces) {
-        //   for (const ap of this.board.aiPieces) {
-        //     score += 10 - this.board.getDistance(pp.position, ap.position);
-        //   }
-        // }
-
         // Dog pattern check
         if (
           this.board.isDogPattern(DIRECTIONS.BOTTOM_RIGHT) ||
@@ -150,10 +140,10 @@ class Heuristic {
         score -= 40;
       } else { // piece disadvantage
         for (const piece of this.board.aiPieces) {
-          const top = this.board.isTopJumpEdge(piece.position);
-          const bottom = this.board.isBottomJumpEdge(piece.position);
-          const left = this.board.isLeftJumpEdge(piece.position);
-          const right = this.board.isRightJumpEdge(piece.position);
+          const top = this.board.isTopJumpEdge(piece.pos);
+          const bottom = this.board.isBottomJumpEdge(piece.pos);
+          const left = this.board.isLeftJumpEdge(piece.pos);
+          const right = this.board.isRightJumpEdge(piece.pos);
           // At double corner
           if (bottom && right || top && left) {
             score += 20;
@@ -163,24 +153,40 @@ class Heuristic {
             score -= 5;
           }
         }
+
+        // Dont trade
+        score += (playerCount + aiCount) * 10;
+
+        // Dog pattern check
+        if (
+          this.board.isDogPattern(DIRECTIONS.BOTTOM_RIGHT) ||
+          this.board.isDogPattern(DIRECTIONS.TOP_LEFT)
+        ) {
+          score -= 6;
+        }
       }
 
-      // Trapped Pieces
       for (const piece of this.board.playerPieces) {
+        score -= piece.pos >> 2; // Close to promotion squares
+
+        // Trapped Pieces
         if (piece.king) {
-          if (this.board.isKingTrapped(piece.position, piece.player))
+          if (this.board.isKingTrapped(piece.pos, piece.player))
             score += this.trapFactor;
         } else {
-          if (this.board.isPieceTrapped(piece.position, piece.player))
+          if (this.board.isPieceTrapped(piece.pos, piece.player))
             score += this.trapFactor;
         }
       }
       for (const piece of this.board.aiPieces) {
+        score += piece.pos >> 2; // Close to promotion squares
+
+        // Trapped Pieces
         if (piece.king) {
-          if (this.board.isKingTrapped(piece.position, piece.player))
+          if (this.board.isKingTrapped(piece.pos, piece.player))
             score -= this.trapFactor;
         } else {
-          if (this.board.isPieceTrapped(piece.position, piece.player))
+          if (this.board.isPieceTrapped(piece.pos, piece.player))
             score -= this.trapFactor;
         }
       }
