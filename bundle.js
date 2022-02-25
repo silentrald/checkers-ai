@@ -40537,6 +40537,21 @@ if (true) {
 
 /***/ }),
 
+/***/ "./src/favicon.ico":
+/*!*************************!*\
+  !*** ./src/favicon.ico ***!
+  \*************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("img/favicon.ico");
+
+/***/ }),
+
 /***/ "./src/img/black-king.png":
 /*!********************************!*\
   !*** ./src/img/black-king.png ***!
@@ -46109,7 +46124,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _classes_checkers__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./classes/checkers */ "./src/classes/checkers.ts");
 /* harmony import */ var _img_black_king_png__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./img/black-king.png */ "./src/img/black-king.png");
 /* harmony import */ var _img_white_king_png__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./img/white-king.png */ "./src/img/white-king.png");
+/* harmony import */ var _favicon_ico__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./favicon.ico */ "./src/favicon.ico");
 var _a;
+
 
 
 

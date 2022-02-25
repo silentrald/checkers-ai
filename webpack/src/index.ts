@@ -2,6 +2,7 @@ import './main.css';
 import Checkers from './classes/checkers';
 import './img/black-king.png';
 import './img/white-king.png';
+import './favicon.ico';
 
 const checkers = new Checkers();
 const board = checkers.board;
